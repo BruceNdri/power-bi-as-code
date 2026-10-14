@@ -1,5 +1,7 @@
 # Un tableau de bord Power BI construit comme du code
 
+![De la maquette HTML au rapport Power BI, en passant par les fichiers texte PBIP](ui/images/article_overview.png)
+
 Ce dépôt montre une façon de construire un rapport Power BI **entièrement en fichiers texte** : données,
 modèle, mesures DAX, pages et thème sont versionnés dans git, générés par des scripts et vérifiés
 automatiquement, sans cliquer dans Power BI Desktop. Desktop ne sert plus qu'à **ouvrir et contrôler** le résultat.
