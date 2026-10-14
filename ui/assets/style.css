@@ -22,6 +22,8 @@
   --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
   --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
   --n1: #a3a19a;           /* période de comparaison (N-1) */
+  --primaire: var(--s1);   /* série unique (barres, période en cours) */
+  --chaleur: var(--s1);    /* carte de chaleur de la matrice */
 
   /* Statuts : réservés au sens bon / mauvais */
   --bon: #0ca30c; --bon-texte: #006300;

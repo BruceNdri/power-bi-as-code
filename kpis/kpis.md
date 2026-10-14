@@ -64,6 +64,14 @@ Mesures d'affichage (dossier `Affichage`) : pour les tuiles du rapport, un libel
 | C12 | Récence (jours) | Clients | Clients | implémenté |
 | C13 | Part du CA des 10 premiers clients | Clients | Clients | implémenté |
 | C14 | Rang client | Clients | Clients | implémenté |
+| E01 | Effet volume | Explication du CA | Ventes | maquette |
+| E02 | Effet prix | Explication du CA | Ventes | maquette |
+| E03 | Effet mix produits | Explication du CA | Ventes | maquette |
+| E04 | CA des clients perdus | Explication du CA | Clients | maquette |
+| E05 | Variation du CA des clients fidèles | Explication du CA | Clients | maquette |
+| E06 | CA des clients revenus | Explication du CA | Clients | maquette |
+| E07 | CA des nouveaux clients | Explication du CA | Clients | maquette |
+| E08 | Part cumulée du CA (concentration) | Explication du CA | Clients | maquette |
 
 ## Fiches — Ventes
 
@@ -325,6 +333,99 @@ Le prix facturé (`Ventes[prix_unitaire]`) peut être inférieur au prix catalog
 - **Calcul :** `IF(HASONEVALUE(Clients[id_client]), RANKX(ALLSELECTED(Clients), [Chiffre d'affaires]))`
 - **Format :** `#,0`
 - **Statut :** implémenté
+
+## Fiches — Explication du CA (v2)
+
+Ces mesures alimentent les graphiques en cascade de la v2 : elles décomposent l'écart
+`[Chiffre d'affaires] - [CA N-1]` en morceaux qui **s'additionnent exactement** à cet écart.
+Statut « maquette » : calculées dans `ui/assets/pages/*.js`, pas encore écrites en DAX dans le modèle.
+
+Dans Power BI, une cascade a besoin d'une colonne d'étapes : une table déconnectée `Étapes du pont`
+(Étape, Ordre) et une mesure `SWITCH(SELECTEDVALUE('Étapes du pont'[Étape]), …)` qui renvoie
+le CA N-1, chaque effet puis le CA de la période. La cascade par catégorie (Overview) n'en a pas besoin :
+catégorie en axe, `[Évolution CA vs N-1 (€)]` en valeur.
+
+### E01 · Effet volume
+
+- **Définition :** part de l'écart due à la variation des quantités, valorisée au prix moyen N-1.
+- **Calcul :**
+  ```dax
+  VAR PrixN1 = DIVIDE([CA N-1], [Quantité vendue N-1])
+  RETURN IF(NOT ISBLANK([CA N-1]), ([Quantité vendue] - [Quantité vendue N-1]) * PrixN1)
+  ```
+- **Format :** `+#,0 €;-#,0 €;0 €`
+- **Statut :** maquette
+
+### E02 · Effet prix
+
+- **Définition :** part de l'écart due aux prix de vente (remises comprises), produit par produit, sur les quantités de la période.
+- **Calcul :** `[Chiffre d'affaires] - [CA aux prix N-1]`, avec
+  ```dax
+  CA aux prix N-1 =
+  SUMX(VALUES(Produits[id_produit]),
+      [Quantité vendue] * COALESCE(DIVIDE([CA N-1], [Quantité vendue N-1]), [Prix moyen de vente]))
+  ```
+  (un produit absent en N-1 est valorisé à son prix de la période : il n'a pas d'effet prix).
+- **Format :** `+#,0 €;-#,0 €;0 €`
+- **Statut :** maquette
+
+### E03 · Effet mix produits
+
+- **Définition :** part de l'écart due au déplacement des ventes vers des produits plus chers ou moins chers.
+- **Calcul :** `[CA aux prix N-1] - [Quantité vendue] * DIVIDE([CA N-1], [Quantité vendue N-1])`
+- **Contrôle :** E01 + E02 + E03 = `[Chiffre d'affaires] - [CA N-1]`.
+- **Format :** `+#,0 €;-#,0 €;0 €`
+- **Statut :** maquette
+
+### E04 · CA des clients perdus
+
+- **Définition :** CA N-1 des clients actifs en N-1 et sans achat sur la période, en négatif.
+- **Calcul :**
+  ```dax
+  - SUMX(FILTER(VALUES(Clients[id_client]), ISBLANK([Chiffre d'affaires]) && NOT ISBLANK([CA N-1])), [CA N-1])
+  ```
+- **Statut :** maquette
+
+### E05 · Variation du CA des clients fidèles
+
+- **Définition :** écart de CA des clients actifs sur les deux périodes.
+- **Calcul :** `SUMX(FILTER(VALUES(Clients[id_client]), NOT ISBLANK([Chiffre d'affaires]) && NOT ISBLANK([CA N-1])), [Chiffre d'affaires] - [CA N-1])`
+- **Statut :** maquette
+
+### E06 · CA des clients revenus
+
+- **Définition :** CA des clients actifs sur la période, absents en N-1 mais déjà clients auparavant.
+- **Calcul :** comme E07, avec premier achat **avant** le début de la période.
+- **Statut :** maquette
+
+### E07 · CA des nouveaux clients
+
+- **Définition :** CA des clients dont le premier achat (toutes périodes) tombe dans la période.
+- **Calcul :**
+  ```dax
+  VAR Debut = MIN(Calendrier[Date])
+  RETURN SUMX(
+      FILTER(VALUES(Clients[id_client]),
+          NOT ISBLANK([Chiffre d'affaires]) && ISBLANK([CA N-1])
+          && CALCULATE(MIN(Ventes[date_vente]), ALL(Calendrier)) >= Debut),
+      [Chiffre d'affaires])
+  ```
+- **Contrôle :** CA N-1 + E04 + E05 + E06 + E07 = `[Chiffre d'affaires]`.
+- **Statut :** maquette
+
+### E08 · Part cumulée du CA (concentration)
+
+- **Définition :** pour chaque client classé du plus gros au plus petit, part du CA réalisée par lui et tous ceux qui le précèdent.
+  Repère affiché : part du CA des 20 % premiers clients.
+- **Calcul :**
+  ```dax
+  VAR Rang = [Rang client]
+  RETURN DIVIDE(
+      SUMX(FILTER(ALLSELECTED(Clients), RANKX(ALLSELECTED(Clients), [Chiffre d'affaires]) <= Rang), [Chiffre d'affaires]),
+      CALCULATE([Chiffre d'affaires], ALLSELECTED(Clients)))
+  ```
+- **Format :** `0.0 %`
+- **Statut :** maquette
 
 <!-- Modèle à copier pour un nouveau KPI
 

@@ -296,7 +296,7 @@
         const p = max ? Math.round((v / max) * 85) : 0;
         const encre = p > 50 ? '#fff' : 'var(--encre)';
         return `<td class="chaleur" title="${echap(l.label + ' · ' + o.colonnes[i] + ' : ' + o.formatInfobulle(v))}"
-          style="background:color-mix(in srgb, var(--s1) ${p}%, var(--surface));color:${encre}">${echap(o.format(v))}</td>`;
+          style="background:color-mix(in srgb, var(--chaleur) ${p}%, var(--surface));color:${encre}">${echap(o.format(v))}</td>`;
       }).join('');
       const total = l.valeurs.reduce((a, b) => a + b, 0);
       return `<tr class="niv${l.niveau}"><td>${l.niveau ? '&nbsp;&nbsp;&nbsp;' : ''}${echap(l.label)}</td>${cellules}<td class="d"><b>${echap(o.format(total))}</b></td></tr>`;
@@ -305,10 +305,192 @@
     const note = document.createElement('div');
     note.className = 'legende';
     note.style.marginTop = '8px';
-    note.innerHTML = `<span>Échelle : <i class="cle" style="background:color-mix(in srgb, var(--s1) 8%, var(--surface));border:1px solid var(--bord)"></i> faible
-      <i class="cle" style="background:color-mix(in srgb, var(--s1) 85%, var(--surface))"></i> élevé (par produit et par mois)</span>`;
+    note.innerHTML = `<span>Échelle : <i class="cle" style="background:color-mix(in srgb, var(--chaleur) 8%, var(--surface));border:1px solid var(--bord)"></i> faible
+      <i class="cle" style="background:color-mix(in srgb, var(--chaleur) 85%, var(--surface))"></i> élevé (par produit et par mois)</span>`;
     el.appendChild(note);
   }
 
-  window.Graph = { temporel, barresH, anneau, nuage, tableau, matrice };
+  // ---------- Cascade : total de départ, contributions signées, total d'arrivée ----------
+  // o.etapes : [{ label, valeur, total: true|false }] — un total part de 0, une contribution part du cumul.
+  function cascade(el, o) {
+    legende(el, [{ nom: 'Total', couleur: 'var(--primaire)' }, { nom: 'Hausse', couleur: 'var(--bon)' }, { nom: 'Baisse', couleur: 'var(--mauvais)' }]);
+    const W = Math.max(280, el.clientWidth), H = o.hauteur || 260, n = o.etapes.length;
+    let cumul = 0;
+    const barres = o.etapes.map(e => {
+      const debut = e.total ? 0 : cumul, fin = e.total ? e.valeur : cumul + e.valeur;
+      cumul = fin;
+      return { ...e, debut, fin };
+    });
+    // Axe resserré autour des niveaux atteints (comme un pont financier) : sinon des écarts de quelques
+    // pour cent disparaissent à côté des totaux. Les totaux partent alors du bas de l'axe, signalé dans la légende.
+    const niveaux = barres.flatMap(b => (b.total ? [b.fin] : [b.debut, b.fin]));
+    const mini = Math.min(...niveaux), maxi = Math.max(...niveaux), ecartMax = maxi - mini || Math.abs(maxi) || 1;
+    const plancher = mini > 0 && mini - ecartMax * 1.5 > 0 ? mini - ecartMax * 1.5 : Math.min(0, mini);
+    const t = graduations(plancher, Math.max(0, maxi), 4).filter((v, i, a) => v >= plancher || a[i + 1] > plancher);
+    const lo = t[0], hi = t[t.length - 1];
+    if (lo > 0) el.querySelector('.legende').insertAdjacentHTML('beforeend', '<span style="color:var(--encre-3)">· axe ne partant pas de zéro</span>');
+    const ml = Math.max(...t.map(v => largeurTexte(o.formatAxe(v)))) + 12, mr = 8, mt = 22, mb = 40;
+    const iw = W - ml - mr, ih = H - mt - mb, bw = iw / n, w = Math.min(46, bw * 0.62);
+    const x = i => ml + bw * (i + 0.5), y = v => mt + ih * (1 - (v - lo) / (hi - lo));
+    const svg = s('svg', { class: 'graph', viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': o.titre || '' }, el);
+    for (const v of t) {
+      s('line', { class: v === 0 ? 'axe-l' : 'grille-l', x1: ml, x2: W - mr, y1: y(v), y2: y(v) }, svg);
+      s('text', { x: ml - 8, y: y(v) + 4, 'text-anchor': 'end' }, svg).textContent = o.formatAxe(v);
+    }
+    const maxCar = Math.max(4, Math.floor(bw / 6.4));
+    barres.forEach((b, i) => {
+      const couleur = b.total ? 'var(--primaire)' : couleurSigne(b.fin - b.debut);
+      const haut = Math.max(b.debut, b.fin), bas = Math.min(b.debut, b.fin);
+      if (b.total) s('path', { d: barreV(x(i) - w / 2, w, y(Math.max(lo, 0)), y(b.fin)), style: `fill:${couleur}` }, svg);
+      else s('rect', { x: x(i) - w / 2, y: y(haut), width: w, height: Math.max(1, y(bas) - y(haut)), rx: 2, style: `fill:${couleur}` }, svg);
+      if (i < n - 1) s('line', { class: 'curseur', x1: x(i) + w / 2, x2: x(i + 1) - w / 2, y1: y(b.fin), y2: y(b.fin), 'stroke-dasharray': '3 3', visibility: 'visible' }, svg);
+      const ecart = b.fin - b.debut;
+      const tv = s('text', { class: 'val', x: x(i), y: y(haut) - 6, 'text-anchor': 'middle' }, svg);
+      tv.textContent = b.total ? o.formatCourt(b.fin) : (ecart >= 0 ? '+' : '−') + o.formatCourt(Math.abs(ecart));
+      // Libellé sur deux lignes si besoin (« Clients » / « perdus »), tronqué seulement en dernier recours.
+      const coupe = l => (l.length > maxCar ? l.slice(0, maxCar - 1) + '…' : l);
+      const mots = String(b.label).split(' ');
+      let l1 = mots[0], k = 1;
+      while (k < mots.length && (l1 + ' ' + mots[k]).length <= maxCar) l1 += ' ' + mots[k++];
+      const l2 = mots.slice(k).join(' ');
+      s('text', { x: x(i), y: H - (l2 ? 20 : 14), 'text-anchor': 'middle' }, svg).textContent = coupe(l1);
+      if (l2) s('text', { x: x(i), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = coupe(l2);
+      const zone = s('rect', { class: 'bande', x: ml + bw * i, y: mt, width: bw, height: ih }, svg);
+      zone.addEventListener('mousemove', e => montrer(e, b.label, b.total
+        ? [{ nom: 'Total', couleur, valeur: o.format(b.fin) }]
+        : [{ nom: ecart >= 0 ? 'Contribution positive' : 'Contribution négative', couleur, valeur: (ecart >= 0 ? '+' : '−') + o.format(Math.abs(ecart)) },
+           ...(b.details || [])]));
+      zone.addEventListener('mouseleave', cacher);
+    });
+  }
+
+  // ---------- Treemap à deux niveaux (groupe > élément), disposition « squarified » ----------
+  function treemap(el, o) {
+    legende(el, o.groupes.map(g => ({ nom: g.label, couleur: g.couleur })));
+    const W = Math.max(280, el.clientWidth), H = o.hauteur || 300;
+    const total = o.groupes.reduce((a, g) => a + g.valeur, 0);
+    const svg = s('svg', { class: 'graph', viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': o.titre || '' }, el);
+    // Squarify : remplit le rectangle en rangées dont les tuiles restent proches du carré.
+    function disposer(items, r) {
+      const res = [], reste = [...items].filter(it => it.valeur > 0).sort((a, b) => b.valeur - a.valeur);
+      let { x, y, w, h } = r;
+      let somme = reste.reduce((a, it) => a + it.valeur, 0);
+      while (reste.length) {
+        const cote = Math.min(w, h), aire = (w * h) / somme;
+        let rangee = [reste[0]], pire = Infinity;
+        const ratio = rg => {
+          const s_ = rg.reduce((a, it) => a + it.valeur, 0) * aire, lg = s_ / cote;
+          return Math.max(...rg.map(it => Math.max(lg / ((it.valeur * aire) / lg), ((it.valeur * aire) / lg) / lg)));
+        };
+        pire = ratio(rangee);
+        for (let i = 1; i < reste.length; i++) {
+          const essai = ratio([...rangee, reste[i]]);
+          if (essai > pire) break;
+          rangee.push(reste[i]); pire = essai;
+        }
+        const sr = rangee.reduce((a, it) => a + it.valeur, 0), lg = (sr * aire) / cote;
+        let pos = 0;
+        for (const it of rangee) {
+          const l = (it.valeur * aire) / lg;
+          res.push(w >= h ? { it, x, y: y + pos, w: lg, h: l } : { it, x: x + pos, y, w: l, h: lg });
+          pos += l;
+        }
+        if (w >= h) { x += lg; w -= lg; } else { y += lg; h -= lg; }
+        reste.splice(0, rangee.length); somme -= sr;
+      }
+      return res;
+    }
+    for (const g of disposer(o.groupes, { x: 0, y: 0, w: W, h: H })) {
+      for (const t of disposer(g.it.enfants, { x: g.x + 1, y: g.y + 1, w: Math.max(0, g.w - 2), h: Math.max(0, g.h - 2) })) {
+        const part = t.it.valeur / total;
+        s('rect', { x: t.x + 1, y: t.y + 1, width: Math.max(0, t.w - 2), height: Math.max(0, t.h - 2), rx: 3,
+                    style: `fill:${g.it.couleur};fill-opacity:${0.55 + 0.45 * Math.min(1, t.it.valeur / g.it.enfants[0].valeur)}` }, svg);
+        if (t.w > 64 && t.h > 34) {
+          const maxCar = Math.floor((t.w - 14) / 7.4);   // libellé en gras : ~7,4 px par caractère
+          const lib = t.it.label.length > maxCar ? t.it.label.slice(0, maxCar - 1) + '…' : t.it.label;
+          const a = s('text', { x: t.x + 8, y: t.y + 18 }, svg); a.textContent = lib; a.style.cssText = 'fill:#fff;font-weight:600';
+          const b = s('text', { x: t.x + 8, y: t.y + 33 }, svg); b.textContent = o.pct(part); b.style.cssText = 'fill:#fff;opacity:.9';
+        }
+        const zone = s('rect', { x: t.x, y: t.y, width: t.w, height: t.h, fill: 'transparent' }, svg);
+        zone.addEventListener('mousemove', e => montrer(e, t.it.label, [
+          { nom: g.it.label, couleur: g.it.couleur, valeur: o.format(t.it.valeur) },
+          { nom: 'Part du total', valeur: o.pct(part) }, { nom: `Part de « ${g.it.label} »`, valeur: o.pct(t.it.valeur / g.it.valeur) }]));
+        zone.addEventListener('mouseleave', cacher);
+      }
+    }
+  }
+
+  // ---------- Barres horizontales empilées à 100 % ----------
+  function empile100(el, o) {
+    legende(el, o.series);
+    const W = Math.max(280, el.clientWidth), hb = 16, hl = hb + 12, H = o.items.length * hl + 22;
+    const ml = Math.min(W * 0.36, Math.max(...o.items.map(it => largeurTexte(it.label))) + 14), mr = 6;
+    const iw = W - ml - mr, x = p => ml + iw * p;
+    const svg = s('svg', { class: 'graph', viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': o.titre || '' }, el);
+    for (const p of [0, 0.25, 0.5, 0.75, 1]) {
+      s('line', { class: p === 0 ? 'axe-l' : 'grille-l', x1: x(p), x2: x(p), y1: 0, y2: H - 18 }, svg);
+      s('text', { x: x(p), y: H - 4, 'text-anchor': p === 0 ? 'start' : p === 1 ? 'end' : 'middle' }, svg).textContent = `${p * 100} %`;
+    }
+    o.items.forEach((it, i) => {
+      const y0 = i * hl + 4, total = it.valeurs.reduce((a, v) => a + v, 0) || 1;
+      const maxCar = Math.floor((ml - 8) / 6.6);
+      const lib = it.label.length > maxCar ? it.label.slice(0, maxCar - 1) + '…' : it.label;
+      const tl = s('text', { x: ml - 10, y: y0 + hb - 3, 'text-anchor': 'end' }, svg); tl.textContent = lib; tl.style.fill = 'var(--encre-2)';
+      let cumul = 0;
+      it.valeurs.forEach((v, j) => {
+        const p = v / total;
+        if (p > 0) {
+          s('rect', { x: x(cumul) + (j ? 1 : 0), y: y0, width: Math.max(0, x(cumul + p) - x(cumul) - (j ? 1 : 0)), height: hb,
+                      style: `fill:${o.series[j].couleur}` }, svg);
+          if (iw * p > 38) {
+            const t = s('text', { x: x(cumul + p / 2), y: y0 + hb - 4, 'text-anchor': 'middle' }, svg);
+            t.textContent = Math.round(p * 100) + ' %'; t.style.cssText = 'fill:#fff;font-weight:600;font-size:10.5px';
+          }
+        }
+        cumul += p;
+      });
+      const zone = s('rect', { class: 'bande', x: 0, y: y0 - 6, width: W, height: hl }, svg);
+      zone.addEventListener('mousemove', e => montrer(e, it.label, o.series.map((se, j) => ({
+        nom: se.nom, couleur: se.couleur, valeur: `${o.pct(it.valeurs[j] / total)} · ${o.format(it.valeurs[j])}` }))));
+      zone.addEventListener('mouseleave', cacher);
+    });
+  }
+
+  // ---------- Courbe de concentration (part cumulée du CA selon la part des clients) ----------
+  function concentration(el, o) {
+    legende(el, [{ nom: o.nomCourbe, couleur: 'var(--primaire)', trait: true }, { nom: 'Répartition égale', couleur: 'var(--n1)', trait: true }]);
+    const W = Math.max(280, el.clientWidth), H = o.hauteur || 260;
+    const ml = 44, mr = 14, mt = 10, mb = 36, iw = W - ml - mr, ih = H - mt - mb;
+    const x = p => ml + iw * p, y = p => mt + ih * (1 - p);
+    const svg = s('svg', { class: 'graph', viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': o.titre || '' }, el);
+    for (const p of [0, 0.25, 0.5, 0.75, 1]) {
+      s('line', { class: p === 0 ? 'axe-l' : 'grille-l', x1: ml, x2: W - mr, y1: y(p), y2: y(p) }, svg);
+      s('text', { x: ml - 8, y: y(p) + 4, 'text-anchor': 'end' }, svg).textContent = `${p * 100} %`;
+      s('text', { x: x(p), y: mt + ih + 16, 'text-anchor': 'middle' }, svg).textContent = `${p * 100} %`;
+    }
+    s('text', { x: ml + iw / 2, y: H - 4, 'text-anchor': 'middle' }, svg).textContent = o.titreX;
+    const v = [...o.valeurs].sort((a, b) => b - a), tot = v.reduce((a, b) => a + b, 0) || 1, n = v.length;
+    const pts = [[0, 0]]; let c = 0;
+    v.forEach((val, i) => { c += val; pts.push([(i + 1) / n, c / tot]); });
+    s('line', { x1: x(0), y1: y(0), x2: x(1), y2: y(1), style: 'stroke:var(--n1)', 'stroke-width': 1.5, 'stroke-dasharray': '4 4' }, svg);
+    s('path', { d: `M${pts.map(([a, b]) => `${x(a)},${y(b)}`).join('L')}L${x(1)},${y(0)}L${x(0)},${y(0)}Z`, style: 'fill:var(--primaire);fill-opacity:.08' }, svg);
+    s('path', { d: 'M' + pts.map(([a, b]) => `${x(a)},${y(b)}`).join('L'), fill: 'none', style: 'stroke:var(--primaire)', 'stroke-width': 2, 'stroke-linejoin': 'round' }, svg);
+    // Repère : part du CA réalisée par les 20 % premiers clients
+    const i20 = Math.max(1, Math.round(n * 0.2)), p20 = pts[i20][1];
+    s('circle', { cx: x(i20 / n), cy: y(p20), r: 4.5, style: 'fill:var(--primaire);stroke:var(--surface)', 'stroke-width': 2 }, svg);
+    const tr = s('text', { class: 'val', x: x(i20 / n) + 10, y: y(p20) + 16 }, svg);
+    tr.textContent = `${Math.round(i20 / n * 100)} % des clients = ${o.pct(p20)} du CA`;
+    const curseur = s('line', { class: 'curseur', y1: mt, y2: mt + ih, visibility: 'hidden' }, svg);
+    const zone = s('rect', { x: ml, y: mt, width: iw, height: ih, fill: 'transparent' }, svg);
+    zone.addEventListener('mousemove', e => {
+      const b = svg.getBoundingClientRect(), k = W / b.width;
+      const p = Math.min(1, Math.max(0, ((e.clientX - b.left) * k - ml) / iw)), i = Math.max(1, Math.round(p * n));
+      curseur.setAttribute('x1', x(i / n)); curseur.setAttribute('x2', x(i / n)); curseur.setAttribute('visibility', 'visible');
+      montrer(e, `${i} premiers clients sur ${n}`, [{ nom: 'Part des clients', valeur: o.pct(i / n) },
+        { nom: 'Part cumulée du CA', couleur: 'var(--primaire)', trait: true, valeur: o.pct(pts[i][1]) }]);
+    });
+    zone.addEventListener('mouseleave', () => { cacher(); curseur.setAttribute('visibility', 'hidden'); });
+  }
+
+  window.Graph = { temporel, barresH, anneau, nuage, tableau, matrice, cascade, treemap, empile100, concentration };
 })();

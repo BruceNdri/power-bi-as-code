@@ -317,21 +317,29 @@
     zoneKpis.style.gridTemplateColumns = zoneKpis.clientWidth >= n * 140 ? `repeat(${n}, minmax(0, 1fr))` : '';
   }
 
-  function demarrer(def) {
+  // options (maquette v2) : marque, sousMarque, numeros (pages « 01 », « 02 »…), filtresLateraux (filtres dans la barre latérale).
+  function demarrer(def, options = {}) {
     page = def;
-    document.title = `${def.titre} · ProjetTest`;
+    const o = { marque: 'ProjetTest', sousMarque: 'Maquette du rapport Power BI', ...options };
+    const rang = PAGES.findIndex(p => p.cle === def.cle);
+    const numero = i => String(i + 1).padStart(2, '0');
+    document.title = `${def.titre} · ${o.marque}`;
+    const filtres = construireFiltres();
     const nav = el('nav', { class: 'nav', 'aria-label': 'Pages du rapport' },
-      el('div', { class: 'marque' }, 'ProjetTest', el('small', {}, 'Maquette du rapport Power BI')),
-      PAGES.map(p => el('a', { href: p.fichier, 'aria-current': p.cle === def.cle ? 'page' : null },
-        el('span', { 'aria-hidden': 'true' }, p.icone), p.titre)),
+      el('div', { class: 'marque' }, o.marque, el('small', {}, o.sousMarque)),
+      PAGES.map((p, i) => el('a', { href: p.fichier, 'aria-current': p.cle === def.cle ? 'page' : null },
+        el('span', { 'aria-hidden': 'true' }, o.numeros ? numero(i) : p.icone), p.titre)),
+      o.filtresLateraux ? filtres : null,
       el('div', { class: 'pied' }, 'Données d’exemple · 2024–2025'));
     zonePeriode = el('p', { class: 'periode' });
     zoneKpis = el('section', { class: 'kpis', 'aria-label': 'Indicateurs clés' });
     zoneGrille = el('section', { class: 'grille' });
+    const titre = el('h1', {}, o.numeros ? el('span', { class: 'num' }, `${numero(rang)} / ${numero(PAGES.length - 1)}`) : null, def.titre);
     const main = el('main', {},
-      el('div', { class: 'entete' }, el('div', {}, el('h1', {}, def.titre), zonePeriode)),
-      construireFiltres(), zoneKpis, zoneGrille);
-    document.body.append(el('div', { class: 'app' }, nav, main), el('div', { id: 'infobulle', hidden: true }));
+      el('div', { class: 'entete' }, el('div', {}, titre, zonePeriode)),
+      o.filtresLateraux ? null : filtres, zoneKpis, zoneGrille);
+    document.body.append(el('div', { class: 'app' + (o.filtresLateraux ? ' lateral' : '') }, nav, main),
+      el('div', { id: 'infobulle', hidden: true }));
     maj();
     let minuteur;
     let largeur = window.innerWidth;

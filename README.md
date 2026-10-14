@@ -65,13 +65,20 @@ Les pages du rapport sont générées : pour les modifier durablement, changer
 
 ## Maquettes HTML (`ui/`)
 
-Ouvrir `ui/index.html` dans un navigateur (aucun serveur ni dépendance).
-Les 3 pages partagent les filtres (année, mois, catégorie, produit, segment, région, ville, client),
+Ouvrir `ui/index.html` dans un navigateur (aucun serveur ni dépendance) et choisir la version :
+
+- **v1** (`ui/*.html`) : thème clair, filtres en bandeau — rendu du rapport `ProjetTest.pbip`.
+- **v2** (`ui/v2/*.html`) : thème bleu marine (bleu marine et bleu ciel, cartes blanches), filtres dans la
+  barre latérale, et des visuels qui expliquent le CA (cascades, treemap, répartitions) — cible du futur rapport v2.
+
+Les deux versions affichent le même contenu. Les 3 pages partagent les filtres (année, mois, catégorie, produit, segment, région, ville, client),
 recalculent les KPI comme les mesures DAX et proposent une vue tableau pour chaque graphique.
 
 | Fichier | Rôle |
 |---|---|
 | `ui/assets/app.js` | Données, filtres, calcul des KPI, structure des pages |
 | `ui/assets/charts.js` | Graphiques SVG (séries temporelles, barres, anneau, nuage, tableaux, matrice) |
-| `ui/assets/style.css` | Thème clair / sombre |
+| `ui/assets/pages/*.js` | Contenu de chaque page (KPI et visuels), commun à la v1 et à la v2 |
+| `ui/assets/style.css` | Thème v1 (clair / sombre) |
+| `ui/v2/v2.css`, `ui/v2/v2.js` | Habillage et disposition de la v2 |
 | `ui/assets/donnees.js` | Données générées — ne pas modifier à la main |

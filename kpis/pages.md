@@ -8,6 +8,21 @@
 
 Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
 
+## Versions du rendu
+
+| Version | Maquette | Rapport | Statut |
+|---|---|---|---|
+| v1 | `ui/*.html` — thème clair, filtres en bandeau | `ProjetTest.pbip` | implémenté |
+| v2 | `ui/v2/*.html` — thème bleu marine, filtres dans une barre latérale, pages numérotées « 01 / 03 » | à faire | maquette |
+
+Les deux versions ont les mêmes pages, KPI et visuels (décrits ci-dessous) ; seuls l'habillage et la disposition changent.
+Les visuels marqués **(v2)** ont été ajoutés avec la v2 pour expliquer le CA ; ils apparaissent aussi dans la maquette v1.
+
+Charte v2 : barre latérale et bandeau de titre bleu marine `#003781` → `#0B4FB3`, accent bleu ciel `#13A0D3`,
+fond `#F2F5F9`, cartes blanches arrondies (12 px) à ombre légère, titres de cartes en marine, donnée principale en marine
+`#003781`, N-1 en gris bleuté `#A7B6CB`, catégories et segments `#0F5BD8` / `#13A0D3` / `#F28C28` / `#2BB39B`
+(palette validée pour le daltonisme), hausse `#1E9E57` / baisse `#D93838`.
+
 ## Éléments communs aux 3 pages
 
 - **En-tête :** titre de la page, période sélectionnée, navigation entre les 3 pages.
@@ -45,6 +60,8 @@ Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
   - barres horizontales : CA par catégorie (V01, part V07)
   - barres : CA par région (V01)
   - anneau : CA par segment client (V07)
+  - **(v2)** cascade « Du CA N-1 au CA de la période » : CA N-1, contribution de chaque catégorie (T02), CA de la période
+  - **(v2)** treemap « Répartition du CA » : catégorie puis produit, surface = CA (V01, V07)
   - tableau : top 5 produits (nom, CA, évolution T03)
   - tableau : top 5 clients (nom, segment, CA, évolution T03)
 - **Statut :** rapport v1 (généré par `scripts/generer_rapport.py`)
@@ -63,6 +80,9 @@ Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
   - Fréquence d'achat (C05)
   - Part du CA des 10 premiers clients (C13)
 - **Visuels :**
+  - **(v2)** cascade « Variation du CA par type de client » : CA N-1, clients perdus (E04), fidèles (E05), revenus (E06), nouveaux (E07), CA de la période
+  - **(v2)** courbe de concentration : part cumulée du CA selon la part des clients (E08), repère des 20 % premiers clients
+  - **(v2)** barres empilées à 100 % : répartition du CA de chaque région par segment
   - courbe : clients actifs et nouveaux clients par mois (C01, C06)
   - barres groupées : CA par segment, période vs N-1 (V01, T01)
   - barres : clients actifs par région (C01)
@@ -89,6 +109,8 @@ Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
   - graphique combiné : CA par mois (colonnes, V01) + moyenne mobile 3 mois (ligne, T09)
   - courbe : CA cumul annuel N vs N-1 (T04, T05)
   - barres : évolution du CA vs N-1 par catégorie (T02, T03)
+  - **(v2)** cascade « Variation du CA : volume, prix, mix » : CA N-1, effet volume (E01), effet prix (E02), effet mix (E03), CA de la période
+  - **(v2)** barres empilées à 100 % : répartition du CA de chaque catégorie par segment client
   - courbes multiples : évolution mensuelle du CA par catégorie (V01, légende `Produits[categorie]`)
   - matrice : catégorie > produit en lignes, mois en colonnes, CA (V01) — mise en forme en carte de chaleur
   - tableau détaillé des produits : rang (V08), produit, catégorie, quantité (V02), CA (V01), CA N-1 (T01),

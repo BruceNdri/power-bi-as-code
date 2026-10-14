@@ -1,0 +1,151 @@
+/* Maquettes v2 — thème clair : bleu marine profond, bleu ciel en accent,
+   cartes blanches arrondies sur fond bleu-gris très clair.
+   Chargé après ../assets/style.css ; « :root.v2 » l'emporte sur les jetons clair et sombre de la v1. */
+
+:root.v2 {
+  color-scheme: light;
+  --marine: #003781;
+  --marine-2: #002a63;
+  --ciel: #13a0d3;
+
+  --page: #f2f5f9;
+  --surface: #ffffff;
+  --surface-2: #f5f8fc;
+  --encre: #0b1f3a;
+  --encre-2: #3d4f66;
+  --encre-3: #64758c;
+  --grille: #e6ebf2;
+  --axe: #c9d3e0;
+  --bord: rgba(0, 55, 129, 0.10);
+  --survol: rgba(0, 55, 129, 0.045);
+  --accent: #0f5bd8;
+  --accent-doux: #dbe8fb;
+
+  /* Palette catégorielle (validée sur blanc : CVD ΔE ≥ 12,9, normal ≥ 18,9) — bleu, ciel, orange, turquoise */
+  --s1: #0f5bd8; --s2: #13a0d3; --s3: #f28c28; --s4: #2bb39b;
+  --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --primaire: #003781;   /* série unique : bleu marine */
+  --n1: #a7b6cb;         /* N-1 : gris bleuté */
+  --chaleur: #0f5bd8;
+
+  --bon: #1e9e57; --bon-texte: #137a40;
+  --mauvais: #d93838; --mauvais-texte: #c02626;
+
+  --rayon: 12px;
+  --ombre: 0 1px 2px rgba(0, 55, 129, 0.06), 0 6px 18px rgba(0, 55, 129, 0.06);
+}
+
+.v2 body {
+  background: var(--page);
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+}
+
+/* ---------- Barre latérale marine ---------- */
+.v2 .app {
+  grid-template-columns: 276px minmax(0, 1fr);
+  /* fond de la colonne latérale sur toute la hauteur, même quand la page défile */
+  background: linear-gradient(to right, var(--marine-2) 276px, transparent 276px);
+}
+.v2 .nav {
+  background: linear-gradient(180deg, var(--marine) 0%, var(--marine-2) 100%);
+  color: #fff; padding: 26px 18px 20px; gap: 4px; overflow-y: auto;
+}
+.v2 .nav .marque { font-size: 18px; font-weight: 700; letter-spacing: 0.01em; padding: 0 8px 24px; }
+.v2 .nav .marque::before {
+  content: ""; display: block; width: 34px; height: 4px; border-radius: 2px; margin-bottom: 14px;
+  background: linear-gradient(90deg, var(--ciel), #7fd3f2);
+}
+.v2 .nav .marque small { font-size: 12px; font-weight: 400; color: rgba(255, 255, 255, 0.68); opacity: 1; margin-top: 2px; }
+.v2 .nav a {
+  border-radius: 10px; padding: 10px 12px; color: rgba(255, 255, 255, 0.82); opacity: 1; font-weight: 500;
+}
+.v2 .nav a span {
+  display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; font-size: 11.5px; font-weight: 600;
+  background: rgba(255, 255, 255, 0.10); font-variant-numeric: tabular-nums;
+}
+.v2 .nav a:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+.v2 .nav a[aria-current="page"] { background: #fff; color: var(--marine); font-weight: 650; }
+.v2 .nav a[aria-current="page"] span { background: var(--ciel); color: #fff; }
+.v2 .nav .pied { color: rgba(255, 255, 255, 0.55); opacity: 1; padding: 20px 8px 0; }
+
+/* ---------- Filtres empilés dans la barre latérale ---------- */
+.v2 .lateral .filtres {
+  position: static; flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 8px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px;
+  padding: 14px 12px; margin: 22px 0 0; box-shadow: none; color: #fff;
+}
+.v2 .lateral .filtres::before {
+  content: "Filtres"; font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65); padding: 0 2px 2px;
+}
+.v2 .lateral .groupe-annees { display: flex; border: 0; border-radius: 9px; background: rgba(0, 0, 0, 0.18); padding: 3px; gap: 2px; }
+.v2 .lateral .groupe-annees button { flex: 1; border-radius: 7px; padding: 6px 0; color: rgba(255, 255, 255, 0.8); }
+.v2 .lateral .groupe-annees button + button { border-left: 0; }
+.v2 .lateral .groupe-annees button:hover { background: rgba(255, 255, 255, 0.08); }
+.v2 .lateral .groupe-annees button[aria-pressed="true"] { background: #fff; color: var(--marine); }
+.v2 .lateral .filtre > button {
+  width: 100%; max-width: none; text-align: left; color: #fff;
+  background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 9px; padding: 8px 28px 8px 10px;
+}
+.v2 .lateral .filtre > button::after { color: rgba(255, 255, 255, 0.7); }
+.v2 .lateral .filtre > button:hover { background: rgba(255, 255, 255, 0.12); }
+.v2 .lateral .filtre > button .lib { color: rgba(255, 255, 255, 0.62); }
+.v2 .lateral .filtre.actif > button { background: rgba(19, 160, 211, 0.28); border-color: var(--ciel); }
+.v2 .lateral .panneau {
+  position: static; width: auto; margin-top: 6px; color: var(--encre);
+  background: #fff; border: 0; border-radius: 10px; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+}
+.v2 .panneau input[type="checkbox"] { accent-color: var(--accent); }
+.v2 .lateral .reinit {
+  margin: 4px 0 0; border: 1px solid rgba(255, 255, 255, 0.35); color: #fff; border-radius: 9px; padding: 8px 12px; font-weight: 600;
+}
+.v2 .lateral .reinit:hover { background: #fff; color: var(--marine); }
+
+/* ---------- En-tête : bandeau marine → bleu ---------- */
+.v2 main { padding: 22px 28px 44px; }
+.v2 .entete {
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(19, 160, 211, 0.55) 0%, transparent 55%),
+    linear-gradient(120deg, var(--marine) 0%, #0b4fb3 100%);
+  color: #fff; border-radius: 16px; padding: 24px 28px; margin-bottom: 18px; box-shadow: var(--ombre);
+}
+.v2 .entete h1 { font-size: 28px; font-weight: 700; letter-spacing: 0.005em; }
+.v2 .entete h1 .num {
+  display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; color: rgba(255, 255, 255, 0.7); margin-bottom: 6px;
+}
+.v2 .entete .periode { color: rgba(255, 255, 255, 0.85); margin-top: 6px; }
+
+/* ---------- Tuiles KPI ---------- */
+.v2 .kpis { gap: 14px; margin-bottom: 18px; }
+.v2 .tuile { border: 0; border-radius: var(--rayon); padding: 16px 16px 14px; position: relative; overflow: hidden; }
+.v2 .tuile::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, var(--ciel), var(--accent)); }
+.v2 .tuile .lib { font-size: 12.5px; font-weight: 600; color: var(--encre-3); }
+.v2 .tuile .val { font-size: 25px; font-weight: 700; color: var(--marine); margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+.v2 .delta .haut, .v2 .delta .bas { padding: 1px 6px; border-radius: 6px; }
+.v2 .delta .haut { background: rgba(30, 158, 87, 0.10); }
+.v2 .delta .bas { background: rgba(217, 56, 56, 0.09); }
+
+/* ---------- Cartes de visuels ---------- */
+.v2 .grille { gap: 16px; }
+.v2 .carte { border: 0; padding: 18px 20px; }
+.v2 .carte h2 { font-size: 15px; font-weight: 650; color: var(--marine); }
+.v2 .bascule { border-color: var(--grille); border-radius: 8px; color: var(--accent); font-weight: 600; }
+.v2 .bascule:hover { background: var(--accent-doux); }
+.v2 .tab th { color: var(--encre-3); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom-color: var(--grille); }
+.v2 .tab tr.niv0 td { background: var(--surface-2); color: var(--marine); }
+
+/* ---------- Infobulle ---------- */
+.v2 #infobulle { border: 0; border-radius: 10px; box-shadow: 0 10px 28px rgba(0, 35, 90, 0.18); }
+.v2 #infobulle .t { color: var(--marine); }
+
+/* ---------- Petits écrans ---------- */
+@media (max-width: 820px) {
+  .v2 .app { grid-template-columns: 1fr; background: none; }
+  .v2 .nav { padding: 14px 16px; }
+  .v2 .nav .marque { padding: 0 12px 0 0; }
+  .v2 .nav .marque::before { display: none; }
+  .v2 .lateral .filtres { flex-basis: 100%; margin-top: 10px; }
+  .v2 main { padding: 16px 16px 32px; }
+  .v2 .entete { padding: 18px; }
+  .v2 .entete h1 { font-size: 23px; }
+}
