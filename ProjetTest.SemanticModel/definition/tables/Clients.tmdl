@@ -1,0 +1,59 @@
+table Clients
+	lineageTag: 1d68a343-7de6-452f-b20c-ce6253b76bda
+
+	column id_client
+		dataType: int64
+		formatString: 0
+		lineageTag: d99f231a-2b8e-4ee0-a03d-db38b1d8207a
+		summarizeBy: none
+		sourceColumn: id_client
+
+		annotation SummarizationSetBy = Automatic
+
+	column nom_client
+		dataType: string
+		lineageTag: 0238d7a3-a6de-445f-9f35-b2ba0f8e1aa1
+		summarizeBy: none
+		sourceColumn: nom_client
+
+		annotation SummarizationSetBy = Automatic
+
+	column ville
+		dataType: string
+		lineageTag: 038d6afe-acac-4ef6-977e-7bab3ba30f5d
+		summarizeBy: none
+		sourceColumn: ville
+
+		annotation SummarizationSetBy = Automatic
+
+	column region
+		dataType: string
+		lineageTag: 4b593f1d-74bd-45ec-a9fc-122bbd3cdb6e
+		summarizeBy: none
+		sourceColumn: region
+
+		annotation SummarizationSetBy = Automatic
+
+	column segment
+		dataType: string
+		lineageTag: 1d608a74-ceff-4feb-aa85-cfbadd2b0327
+		summarizeBy: none
+		sourceColumn: segment
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Clients = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents(DossierSources & "Clients.xlsx"), null, true),
+				    Feuille = Source{[Item="Clients",Kind="Sheet"]}[Data],
+				    EnTetes = Table.PromoteHeaders(Feuille, [PromoteAllScalars=true]),
+				    Types = Table.TransformColumnTypes(EnTetes, {{"id_client", Int64.Type}, {"nom_client", type text}, {"ville", type text}, {"region", type text}, {"segment", type text}})
+				in
+				    Types
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

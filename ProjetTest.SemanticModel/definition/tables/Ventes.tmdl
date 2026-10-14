@@ -1,0 +1,99 @@
+table Ventes
+	lineageTag: a73a2b0e-7b31-416b-be20-9bb38b98d2b8
+
+	measure 'Chiffre d''affaires' = SUM(Ventes[montant])
+		formatString: #,0.00 €
+		lineageTag: 9f16af63-59fb-4da0-802e-9b85a9d00fb1
+
+	measure 'Quantité vendue' = SUM(Ventes[quantite])
+		formatString: #,0
+		lineageTag: de27c320-7f96-4677-8f3d-d6ab47834032
+
+	measure 'Nombre de ventes' = COUNTROWS(Ventes)
+		formatString: #,0
+		lineageTag: f3bf68bb-7b23-45ec-a299-a32e091ef2a7
+
+	measure 'Panier moyen' = DIVIDE([Chiffre d'affaires], [Nombre de ventes])
+		formatString: #,0.00 €
+		lineageTag: 03625a05-5384-4ae0-b6bc-9c01d866f8b0
+
+	column id_vente
+		dataType: int64
+		formatString: 0
+		lineageTag: 38887653-2cb1-43a6-b3f5-2c04ace1af35
+		summarizeBy: none
+		sourceColumn: id_vente
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_vente
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: d0f6a60b-3ea3-4ecc-bd2f-4254c1fc1902
+		summarizeBy: none
+		sourceColumn: date_vente
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column id_client
+		dataType: int64
+		formatString: 0
+		lineageTag: 4b8e3437-9bd9-4b9d-82be-bf4147ed307f
+		summarizeBy: none
+		sourceColumn: id_client
+
+		annotation SummarizationSetBy = Automatic
+
+	column id_produit
+		dataType: int64
+		formatString: 0
+		lineageTag: 4615573c-476a-4d42-90ba-a9175d0d5cad
+		summarizeBy: none
+		sourceColumn: id_produit
+
+		annotation SummarizationSetBy = Automatic
+
+	column quantite
+		dataType: int64
+		formatString: 0
+		lineageTag: c6c90a82-20b0-4923-a65a-e3ca329a80c5
+		summarizeBy: sum
+		sourceColumn: quantite
+
+		annotation SummarizationSetBy = Automatic
+
+	column prix_unitaire
+		dataType: decimal
+		formatString: #,0.00
+		lineageTag: b524b251-e631-4e3b-a0a7-ed1ce230bf92
+		summarizeBy: none
+		sourceColumn: prix_unitaire
+
+		annotation SummarizationSetBy = Automatic
+
+	column montant
+		dataType: decimal
+		formatString: #,0.00
+		lineageTag: 446ece26-9961-407f-8af2-fa4b26257f02
+		summarizeBy: sum
+		sourceColumn: montant
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Ventes = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents(DossierSources & "Ventes.xlsx"), null, true),
+				    Feuille = Source{[Item="Ventes",Kind="Sheet"]}[Data],
+				    EnTetes = Table.PromoteHeaders(Feuille, [PromoteAllScalars=true]),
+				    Types = Table.TransformColumnTypes(EnTetes, {{"id_vente", Int64.Type}, {"date_vente", type date}, {"id_client", Int64.Type}, {"id_produit", Int64.Type}, {"quantite", Int64.Type}, {"prix_unitaire", Currency.Type}, {"montant", Currency.Type}})
+				in
+				    Types
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,8 @@
+relationship 6c88a2f7-b20d-4360-becc-fe3a86217a55
+	fromColumn: Ventes.id_client
+	toColumn: Clients.id_client
+
+relationship 3035df7c-8062-4a92-a4e8-54bac0f73e94
+	fromColumn: Ventes.id_produit
+	toColumn: Produits.id_produit
+

@@ -1,0 +1,52 @@
+table Produits
+	lineageTag: 51bdbc87-c23b-40fa-82cb-5abf0b750d38
+
+	column id_produit
+		dataType: int64
+		formatString: 0
+		lineageTag: 388e2022-cad1-4347-a3e7-cfb2a2e83e60
+		summarizeBy: none
+		sourceColumn: id_produit
+
+		annotation SummarizationSetBy = Automatic
+
+	column nom_produit
+		dataType: string
+		lineageTag: 98ab54f3-05fb-466a-b3de-46d0618c8591
+		summarizeBy: none
+		sourceColumn: nom_produit
+
+		annotation SummarizationSetBy = Automatic
+
+	column categorie
+		dataType: string
+		lineageTag: 0e00c58d-7b86-48c2-9e3c-2269041439d9
+		summarizeBy: none
+		sourceColumn: categorie
+
+		annotation SummarizationSetBy = Automatic
+
+	column prix_unitaire
+		dataType: decimal
+		formatString: #,0.00
+		lineageTag: c964a312-c744-4e65-90c0-7c0f505a2502
+		summarizeBy: none
+		sourceColumn: prix_unitaire
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Produits = m
+		mode: import
+		source =
+				let
+				    Source = Excel.Workbook(File.Contents(DossierSources & "Produits.xlsx"), null, true),
+				    Feuille = Source{[Item="Produits",Kind="Sheet"]}[Data],
+				    EnTetes = Table.PromoteHeaders(Feuille, [PromoteAllScalars=true]),
+				    Types = Table.TransformColumnTypes(EnTetes, {{"id_produit", Int64.Type}, {"nom_produit", type text}, {"categorie", type text}, {"prix_unitaire", Currency.Type}})
+				in
+				    Types
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+
