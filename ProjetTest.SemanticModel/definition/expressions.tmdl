@@ -1,6 +1,14 @@
-/// Dossier contenant les fichiers Excel (avec la barre oblique finale).
-expression DossierSources = "C:\Chemin\vers\projet-test\sources\" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
-	lineageTag: b7a2dfe6-5098-4153-a0fc-65907ffc94c9
+/// Serveur PostgreSQL vu depuis Power BI Desktop (tunnel SSH : ssh -L 5433:localhost:5433 <serveur>).
+expression ServeurPostgres = "localhost:5433" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 750b3348-b855-4e89-9254-be8c236c54ab
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Text
+
+/// Base de données PostgreSQL.
+expression BasePostgres = "ventes" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 6a9b81da-4052-4975-ad7c-b64877e59914
 
 	annotation PBI_NavigationStepName = Navigation
 

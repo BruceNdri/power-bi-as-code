@@ -36,7 +36,7 @@ table Ventes
 		displayFolder: Ventes
 		lineageTag: f78f440e-56e4-4bce-b7cb-7b7012a4ad4d
 
-	measure 'Rang produit' = IF(HASONEVALUE(Produits[nom_produit]), RANKX(ALLSELECTED(Produits[nom_produit]), [Chiffre d'affaires]))
+	measure 'Rang produit' = IF(HASONEVALUE(Produits[nom_produit]), RANKX(ALLSELECTED(Produits), [Chiffre d'affaires]))
 		formatString: #,0
 		displayFolder: Ventes
 		lineageTag: a946229d-3642-4374-b958-70672a0d678b
@@ -182,10 +182,227 @@ table Ventes
 		displayFolder: Clients
 		lineageTag: beb6c04b-8fa7-4898-8209-73cebe208ade
 
-	measure 'Rang client' = IF(HASONEVALUE(Clients[id_client]), RANKX(ALLSELECTED(Clients[id_client]), [Chiffre d'affaires]))
+	measure 'Rang client' = IF(HASONEVALUE(Clients[id_client]), RANKX(ALLSELECTED(Clients), [Chiffre d'affaires]))
 		formatString: #,0
 		displayFolder: Clients
 		lineageTag: d0e46910-5d03-49ff-90e1-69fbdb6bb72e
+
+	measure 'Nombre de ventes N-1' = CALCULATE([Nombre de ventes], SAMEPERIODLASTYEAR(Calendrier[Date]))
+		formatString: #,0
+		displayFolder: Temps
+		lineageTag: b562daef-fad8-4028-8fd9-d3fa051ab7aa
+
+	measure 'Quantité vendue N-1' = CALCULATE([Quantité vendue], SAMEPERIODLASTYEAR(Calendrier[Date]))
+		formatString: #,0
+		displayFolder: Temps
+		lineageTag: 70f08bc7-a3db-4fa9-813a-bb9c893ecab2
+
+	measure 'Panier moyen N-1' = CALCULATE([Panier moyen], SAMEPERIODLASTYEAR(Calendrier[Date]))
+		formatString: #,0.00 €
+		displayFolder: Temps
+		lineageTag: d436772d-2596-44db-ad86-3ed5c5133304
+
+	measure 'Prix moyen de vente N-1' = CALCULATE([Prix moyen de vente], SAMEPERIODLASTYEAR(Calendrier[Date]))
+		formatString: #,0.00 €
+		displayFolder: Temps
+		lineageTag: 8aba3074-3957-4760-aac8-bb0359082a97
+
+	measure 'CA moyen par client N-1' = CALCULATE([CA moyen par client], SAMEPERIODLASTYEAR(Calendrier[Date]))
+		formatString: #,0.00 €
+		displayFolder: Temps
+		lineageTag: 5a75e40d-77d4-487d-8702-66c04b62c411
+
+	measure 'Libellé évol. CA' =
+			VAR N1 = [CA N-1]
+			VAR Evol = DIVIDE([Chiffre d'affaires] - N1, N1)
+			RETURN
+			    IF(
+			        ISBLANK(N1) || N1 = 0,
+			        "— vs N-1",
+			        IF(Evol >= 0, "▲ ", "▼ ") & FORMAT(Evol, "+0.0 %;-0.0 %;0.0 %") & " vs N-1"
+			    )
+		displayFolder: Affichage
+		lineageTag: 06f78555-1750-4141-843f-e57edff4694a
+
+	measure 'Couleur évol. CA' =
+			VAR N1 = [CA N-1]
+			RETURN IF(ISBLANK(N1) || N1 = 0, "#6F6D68", IF([Chiffre d'affaires] >= N1, "#006300", "#B42727"))
+		displayFolder: Affichage
+		lineageTag: f00c0c7a-baab-4b80-8aa4-69b0647b238f
+
+	measure 'Libellé évol. CA cumul' =
+			VAR N1 = [CA cumul annuel N-1]
+			VAR Evol = DIVIDE([CA cumul annuel] - N1, N1)
+			RETURN
+			    IF(
+			        ISBLANK(N1) || N1 = 0,
+			        "— vs N-1",
+			        IF(Evol >= 0, "▲ ", "▼ ") & FORMAT(Evol, "+0.0 %;-0.0 %;0.0 %") & " vs N-1"
+			    )
+		displayFolder: Affichage
+		lineageTag: 0885f4a8-22f1-4155-aeda-55db4ecb0998
+
+	measure 'Couleur évol. CA cumul' =
+			VAR N1 = [CA cumul annuel N-1]
+			RETURN IF(ISBLANK(N1) || N1 = 0, "#6F6D68", IF([CA cumul annuel] >= N1, "#006300", "#B42727"))
+		displayFolder: Affichage
+		lineageTag: 6e1de837-01f5-4be6-be30-3d5a6fbe8f15
+
+	measure 'Libellé évol. ventes' =
+			VAR N1 = [Nombre de ventes N-1]
+			VAR Evol = DIVIDE([Nombre de ventes] - N1, N1)
+			RETURN
+			    IF(
+			        ISBLANK(N1) || N1 = 0,
+			        "— vs N-1",
+			        IF(Evol >= 0, "▲ ", "▼ ") & FORMAT(Evol, "+0.0 %;-0.0 %;0.0 %") & " vs N-1"
+			    )
+		displayFolder: Affichage
+		lineageTag: 0d87e822-270b-4371-aecf-1832d316ed5d
+
+	measure 'Couleur évol. ventes' =
+			VAR N1 = [Nombre de ventes N-1]
+			RETURN IF(ISBLANK(N1) || N1 = 0, "#6F6D68", IF([Nombre de ventes] >= N1, "#006300", "#B42727"))
+		displayFolder: Affichage
+		lineageTag: eead533e-88dc-4242-a64b-e66f9ffcd4b4
+
+	measure 'Libellé évol. panier' =
+			VAR N1 = [Panier moyen N-1]
+			VAR Evol = DIVIDE([Panier moyen] - N1, N1)
+			RETURN
+			    IF(
+			        ISBLANK(N1) || N1 = 0,
+			        "— vs N-1",
+			        IF(Evol >= 0, "▲ ", "▼ ") & FORMAT(Evol, "+0.0 %;-0.0 %;0.0 %") & " vs N-1"
+			    )
+		displayFolder: Affichage
+		lineageTag: 643525bf-618a-438b-9169-0b508639404d
+
+	measure 'Couleur évol. panier' =
+			VAR N1 = [Panier moyen N-1]
+			RETURN IF(ISBLANK(N1) || N1 = 0, "#6F6D68", IF([Panier moyen] >= N1, "#006300", "#B42727"))
+		displayFolder: Affichage
+		lineageTag: 86b4e9fd-fa79-4bfc-b4fe-44b76bd4f47d
+
+	measure 'Libellé évol. clients' =
+			VAR N1 = [Clients actifs N-1]
+			VAR Evol = DIVIDE([Clients actifs] - N1, N1)
+			RETURN
+			    IF(
+			        ISBLANK(N1) || N1 = 0,
+			        "— vs N-1",
+			        IF(Evol >= 0, "▲ ", "▼ ") & FORMAT(Evol, "+0.0 %;-0.0 %;0.0 %") & " vs N-1"
+			    )
+		displayFolder: Affichage
+		lineageTag: cc34e250-3db1-4bed-b0ab-268abc38fd54
+
+	measure 'Couleur évol. clients' =
+			VAR N1 = [Clients actifs N-1]
+			RETURN IF(ISBLANK(N1) || N1 = 0, "#6F6D68", IF([Clients actifs] >= N1, "#006300", "#B42727"))
+		displayFolder: Affichage
+		lineageTag: 92cf1121-9e1e-4709-9fea-fa5e93f5a419
+
+	measure 'Libellé évol. CA moyen client' =
+			VAR N1 = [CA moyen par client N-1]
+			VAR Evol = DIVIDE([CA moyen par client] - N1, N1)
+			RETURN
+			    IF(
+			        ISBLANK(N1) || N1 = 0,
+			        "— vs N-1",
+			        IF(Evol >= 0, "▲ ", "▼ ") & FORMAT(Evol, "+0.0 %;-0.0 %;0.0 %") & " vs N-1"
+			    )
+		displayFolder: Affichage
+		lineageTag: b6ca150d-5535-4e48-892d-b7fe889c9194
+
+	measure 'Couleur évol. CA moyen client' =
+			VAR N1 = [CA moyen par client N-1]
+			RETURN IF(ISBLANK(N1) || N1 = 0, "#6F6D68", IF([CA moyen par client] >= N1, "#006300", "#B42727"))
+		displayFolder: Affichage
+		lineageTag: 12e5e9de-f4ad-4cfb-9d58-ed9ca3917a07
+
+	measure 'Libellé évol. quantité' =
+			VAR N1 = [Quantité vendue N-1]
+			VAR Evol = DIVIDE([Quantité vendue] - N1, N1)
+			RETURN
+			    IF(
+			        ISBLANK(N1) || N1 = 0,
+			        "— vs N-1",
+			        IF(Evol >= 0, "▲ ", "▼ ") & FORMAT(Evol, "+0.0 %;-0.0 %;0.0 %") & " vs N-1"
+			    )
+		displayFolder: Affichage
+		lineageTag: 1abbbaab-b436-4505-8e25-97adc334f8a3
+
+	measure 'Couleur évol. quantité' =
+			VAR N1 = [Quantité vendue N-1]
+			RETURN IF(ISBLANK(N1) || N1 = 0, "#6F6D68", IF([Quantité vendue] >= N1, "#006300", "#B42727"))
+		displayFolder: Affichage
+		lineageTag: 67cba2aa-1e0d-497f-82df-6091a3abac7f
+
+	measure 'Libellé évol. prix moyen' =
+			VAR N1 = [Prix moyen de vente N-1]
+			VAR Evol = DIVIDE([Prix moyen de vente] - N1, N1)
+			RETURN
+			    IF(
+			        ISBLANK(N1) || N1 = 0,
+			        "— vs N-1",
+			        IF(Evol >= 0, "▲ ", "▼ ") & FORMAT(Evol, "+0.0 %;-0.0 %;0.0 %") & " vs N-1"
+			    )
+		displayFolder: Affichage
+		lineageTag: 85563280-c5df-4238-aa0c-ce36a82ca9f5
+
+	measure 'Couleur évol. prix moyen' =
+			VAR N1 = [Prix moyen de vente N-1]
+			RETURN IF(ISBLANK(N1) || N1 = 0, "#6F6D68", IF([Prix moyen de vente] >= N1, "#006300", "#B42727"))
+		displayFolder: Affichage
+		lineageTag: 069f87e1-5a0d-4e51-a3f2-5153be097227
+
+	measure 'Couleur écart vs N-1' = IF([Évolution CA vs N-1 (€)] >= 0, "#0CA30C", "#D03B3B")
+		displayFolder: Affichage
+		lineageTag: c7417ffc-6fcd-4815-8bdc-75c9daa701cc
+
+	measure 'Couleur évol. mois' = IF([Évolution vs mois précédent (%)] >= 0, "#0CA30C", "#D03B3B")
+		displayFolder: Affichage
+		lineageTag: 6a213258-6e3b-4538-8986-7aa4bbb7e755
+
+	measure 'Texte nouveaux clients' = FORMAT(DIVIDE([Nouveaux clients], [Clients actifs]), "0.0 %") & " des clients actifs"
+		displayFolder: Affichage
+		lineageTag: 3e940964-ab5d-4be6-92fb-c517df0ef216
+
+	measure 'Texte remises' = FORMAT([Montant des remises], "#,0 €") & " de remises accordées"
+		displayFolder: Affichage
+		lineageTag: 1d80662b-aa70-4ddb-8f74-05f2751e2582
+
+	measure 'Texte portefeuille' = "sur " & FORMAT([Clients au portefeuille], "#,0") & " clients au portefeuille"
+		displayFolder: Affichage
+		lineageTag: f8d6dc89-3ebf-46d3-b1b2-c57e8ea02000
+
+	measure 'Texte nouveaux' = "premier achat sur la période"
+		displayFolder: Affichage
+		lineageTag: 8a3ddadd-37cc-431b-9857-d45456cb17a3
+
+	measure 'Texte rétention' = IF(ISBLANK([Clients actifs N-1]), "pas de données N-1", "clients N-1 revenus acheter")
+		displayFolder: Affichage
+		lineageTag: 951ee2d1-68a8-4bd0-a39b-4f44910ce06c
+
+	measure 'Texte perdus' = IF(ISBLANK([Clients actifs N-1]), "pas de données N-1", "actifs en N-1, sans achat depuis")
+		displayFolder: Affichage
+		lineageTag: d560a477-1007-43ff-acde-83d9da381a86
+
+	measure 'Texte fréquence' = "achats par client actif"
+		displayFolder: Affichage
+		lineageTag: 0c78f206-9da7-4267-893c-d5194fc337d9
+
+	measure 'Texte concentration' = "concentration du chiffre d'affaires"
+		displayFolder: Affichage
+		lineageTag: e533daf4-9bc3-4837-918b-37e0ca6f574f
+
+	measure 'Texte taux de remise' = "taux de remise : " & FORMAT([Taux de remise], "0.0 %")
+		displayFolder: Affichage
+		lineageTag: be768ce6-0f10-4f2a-9e29-4b7a8fec31d9
+
+	measure 'Texte catalogue' = "sur " & COUNTROWS(ALL(Produits)) & " au catalogue"
+		displayFolder: Affichage
+		lineageTag: b14cf4e3-c4e6-4048-a274-7a661344e49c
 
 	column id_vente
 		dataType: int64
@@ -256,10 +473,9 @@ table Ventes
 		mode: import
 		source =
 				let
-				    Source = Excel.Workbook(File.Contents(DossierSources & "Ventes.xlsx"), null, true),
-				    Feuille = Source{[Item="Ventes",Kind="Sheet"]}[Data],
-				    EnTetes = Table.PromoteHeaders(Feuille, [PromoteAllScalars=true]),
-				    Types = Table.TransformColumnTypes(EnTetes, {{"id_vente", Int64.Type}, {"date_vente", type date}, {"id_client", Int64.Type}, {"id_produit", Int64.Type}, {"quantite", Int64.Type}, {"prix_unitaire", Currency.Type}, {"montant", Currency.Type}})
+				    Source = PostgreSQL.Database(ServeurPostgres, BasePostgres),
+				    Table = Source{[Schema="public",Item="ventes"]}[Data],
+				    Types = Table.TransformColumnTypes(Table, {{"id_vente", Int64.Type}, {"date_vente", type date}, {"id_client", Int64.Type}, {"id_produit", Int64.Type}, {"quantite", Int64.Type}, {"prix_unitaire", Currency.Type}, {"montant", Currency.Type}})
 				in
 				    Types
 

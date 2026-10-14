@@ -75,6 +75,26 @@ table Calendrier
 
 		annotation UnderlyingDateTimeDataType = Date
 
+	column 'Année-Mois n°'
+		dataType: int64
+		isNameInferred
+		formatString: 0
+		lineageTag: 886b2ac5-974e-4b67-8911-86109567c9f5
+		summarizeBy: none
+		sourceColumn: [Année-Mois n°]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Mois-Année'
+		dataType: string
+		isNameInferred
+		lineageTag: 27dfa430-6048-47c0-9094-f0ada626b68b
+		summarizeBy: none
+		sourceColumn: [Mois-Année]
+		sortByColumn: 'Année-Mois n°'
+
+		annotation SummarizationSetBy = Automatic
+
 	partition Calendrier = calculated
 		mode: import
 		source =
@@ -88,6 +108,8 @@ table Calendrier
 				        "Mois n°", MONTH([Date]),
 				        "Mois", FORMAT([Date], "mmm"),
 				        "Année-Mois", FORMAT([Date], "yyyy-mm"),
-				        "Début du mois", DATE(YEAR([Date]), MONTH([Date]), 1)
+				        "Début du mois", DATE(YEAR([Date]), MONTH([Date]), 1),
+				        "Année-Mois n°", YEAR([Date]) * 100 + MONTH([Date]),
+				        "Mois-Année", FORMAT([Date], "mmm yy")
 				    )
 

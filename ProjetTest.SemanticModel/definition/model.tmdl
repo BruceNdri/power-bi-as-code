@@ -6,7 +6,7 @@ model Model
 		legacyRedirects
 		returnErrorValuesAsNull
 
-annotation PBI_QueryOrder = ["DossierSources","Produits","Clients","Ventes"]
+annotation PBI_QueryOrder = ["ServeurPostgres","BasePostgres","Produits","Clients","Ventes"]
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 

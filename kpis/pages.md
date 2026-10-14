@@ -2,9 +2,9 @@
 
 | # | Page | Objectif | Maquette | Statut |
 |---|---|---|---|---|
-| 1 | Overview | Vue d'ensemble de l'activité en un coup d'œil | `ui/overview.html` | maquette v1 |
-| 2 | Clients | Comprendre qui achète, combien et s'ils reviennent | `ui/clients.html` | maquette v1 |
-| 3 | Ventes | Analyser les ventes par produit, catégorie et dans le temps | `ui/ventes.html` | maquette v1 |
+| 1 | Overview | Vue d'ensemble de l'activité en un coup d'œil | `ui/overview.html` | rapport v1 |
+| 2 | Clients | Comprendre qui achète, combien et s'ils reviennent | `ui/clients.html` | rapport v1 |
+| 3 | Ventes | Analyser les ventes par produit, catégorie et dans le temps | `ui/ventes.html` | rapport v1 |
 
 Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
 
@@ -24,7 +24,7 @@ Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
   | Ville | `Clients[ville]` | liste déroulante avec recherche |
   | Client | `Clients[nom_client]` | liste déroulante avec recherche |
 
-- **Bouton** « Réinitialiser les filtres ».
+- **Bouton** « Réinitialiser les filtres » : dans Power BI, bouton « Rétablir les valeurs par défaut » de la barre d'outils.
 - Les comparaisons N-1 sont vides si l'année sélectionnée est 2024 (pas de données 2023) :
   afficher « — » plutôt que 0.
 
@@ -47,7 +47,7 @@ Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
   - anneau : CA par segment client (V07)
   - tableau : top 5 produits (nom, CA, évolution T03)
   - tableau : top 5 clients (nom, segment, CA, évolution T03)
-- **Statut :** maquette v1
+- **Statut :** rapport v1 (généré par `scripts/generer_rapport.py`)
 
 ## 2. Clients
 
@@ -72,7 +72,7 @@ Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
   - tableau détaillé des clients : rang (C14), nom, segment, ville, région, CA (V01), CA N-1 (T01),
     évolution (T03), nombre de ventes (V03), panier moyen (V04), dernier achat (C11), récence (C12) —
     mise en forme conditionnelle sur l'évolution et la récence
-- **Statut :** maquette v1
+- **Statut :** rapport v1 (généré par `scripts/generer_rapport.py`)
 
 ## 3. Ventes
 
@@ -94,7 +94,7 @@ Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
   - tableau détaillé des produits : rang (V08), produit, catégorie, quantité (V02), CA (V01), CA N-1 (T01),
     évolution € et % (T02, T03), part du CA (V07), prix moyen (V05), taux de remise (R03)
   - barres : évolution vs mois précédent (T08) sur les 12 derniers mois
-- **Statut :** maquette v1
+- **Statut :** rapport v1 (généré par `scripts/generer_rapport.py`)
 
 <!-- Modèle à copier pour une nouvelle page
 

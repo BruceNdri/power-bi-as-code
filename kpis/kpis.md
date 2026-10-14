@@ -12,7 +12,7 @@ demandent une **table de dates** :
 | Élément | Détail | Statut |
 |---|---|---|
 | Table `Calendrier` | Une ligne par jour du 2024-01-01 au 2025-12-31, marquée comme table de dates | implémenté |
-| Colonnes | `Date`, `Année`, `Trimestre` (T1…T4), `Mois n°`, `Mois` (janv.…déc., trié par `Mois n°`), `Année-Mois` (2024-01…), `Début du mois` | implémenté |
+| Colonnes | `Date`, `Année`, `Trimestre` (T1…T4), `Mois n°`, `Mois` (janv.…déc., trié par `Mois n°`), `Année-Mois` (2024-01…), `Début du mois`, `Mois-Année` (janv. 25…, trié par `Année-Mois n°`) | implémenté |
 | Relation | `Ventes[date_vente]` → `Calendrier[Date]` (plusieurs à un) | implémenté |
 
 Toutes les formules ci-dessous filtrent le temps via `Calendrier`, jamais via `Ventes[date_vente]`.
@@ -22,6 +22,9 @@ Toutes les formules ci-dessous filtrent le temps via `Calendrier`, jamais via `V
 À valider à l'ouverture dans Power BI Desktop.
 
 Formats : montants `#,0.00 €` · entiers `#,0` · taux `0.0 %` · évolutions `+0.0 %;-0.0 %;0.0 %`.
+
+Mesures d'affichage (dossier `Affichage`) : pour les tuiles du rapport, un libellé
+« ▲ +4,7 % vs N-1 » et une couleur (vert / rouge / gris) par KPI comparé à N-1, et les textes de contexte.
 
 ## Synthèse
 
@@ -116,7 +119,7 @@ Formats : montants `#,0.00 €` · entiers `#,0` · taux `0.0 %` · évolutions 
 ### V08 · Rang produit
 
 - **Définition :** classement du produit par CA dans la sélection (1 = meilleur).
-- **Calcul :** `IF(HASONEVALUE(Produits[nom_produit]), RANKX(ALLSELECTED(Produits[nom_produit]), [Chiffre d'affaires]))`
+- **Calcul :** `IF(HASONEVALUE(Produits[nom_produit]), RANKX(ALLSELECTED(Produits), [Chiffre d'affaires]))`
 - **Format :** `#,0`
 - **Statut :** implémenté
 
@@ -319,7 +322,7 @@ Le prix facturé (`Ventes[prix_unitaire]`) peut être inférieur au prix catalog
 
 ### C14 · Rang client
 
-- **Calcul :** `IF(HASONEVALUE(Clients[id_client]), RANKX(ALLSELECTED(Clients[id_client]), [Chiffre d'affaires]))`
+- **Calcul :** `IF(HASONEVALUE(Clients[id_client]), RANKX(ALLSELECTED(Clients), [Chiffre d'affaires]))`
 - **Format :** `#,0`
 - **Statut :** implémenté
 
