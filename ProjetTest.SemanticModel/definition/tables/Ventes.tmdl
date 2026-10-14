@@ -404,6 +404,183 @@ table Ventes
 		displayFolder: Affichage
 		lineageTag: b14cf4e3-c4e6-4048-a274-7a661344e49c
 
+	/// Prix moyen de vente de la même période un an plus tôt.
+	measure 'Prix moyen N-1' = DIVIDE([CA N-1], [Quantité vendue N-1])
+		formatString: #,0.00 €
+		displayFolder: Explication du CA
+		lineageTag: ca77720c-6bf8-4c1f-81d6-b2d9eb33f6c0
+
+	/// CA de la période valorisé aux prix N-1 de chaque produit (prix de la période pour un produit absent en N-1).
+	measure 'CA aux prix N-1' =
+			SUMX(
+			    VALUES(Produits[id_produit]),
+			    [Quantité vendue] * COALESCE(DIVIDE([CA N-1], [Quantité vendue N-1]), [Prix moyen de vente])
+			)
+		formatString: #,0.00 €
+		displayFolder: Explication du CA
+		lineageTag: 7faeeab8-50a6-456e-aad7-c90c7619634c
+
+	/// E01 · Écart dû aux quantités, valorisé au prix moyen N-1.
+	measure 'Effet volume' = IF(NOT ISBLANK([CA N-1]), ([Quantité vendue] - [Quantité vendue N-1]) * [Prix moyen N-1])
+		formatString: +#,0 €;-#,0 €;0 €
+		displayFolder: Explication du CA
+		lineageTag: 7c6da091-e2f4-4481-ac5e-d97ce23daf49
+
+	/// E02 · Écart dû aux prix de vente (remises comprises), produit par produit.
+	measure 'Effet prix' = IF(NOT ISBLANK([CA N-1]), [Chiffre d'affaires] - [CA aux prix N-1])
+		formatString: +#,0 €;-#,0 €;0 €
+		displayFolder: Explication du CA
+		lineageTag: c77d739d-f456-4a53-9276-eb8e91fe17d4
+
+	/// E03 · Écart dû au déplacement des ventes vers des produits plus ou moins chers. E01 + E02 + E03 = écart de CA.
+	measure 'Effet mix' = IF(NOT ISBLANK([CA N-1]), [CA aux prix N-1] - [Quantité vendue] * [Prix moyen N-1])
+		formatString: +#,0 €;-#,0 €;0 €
+		displayFolder: Explication du CA
+		lineageTag: 3396906d-5d20-4d01-8103-0dcaa3a246c5
+
+	/// E04 · CA N-1 des clients sans achat sur la période (en négatif).
+	measure 'CA clients perdus' =
+			IF(
+			    NOT ISBLANK([CA N-1]),
+			    - SUMX(
+			        FILTER(VALUES(Clients[id_client]), ISBLANK([Chiffre d'affaires]) && NOT ISBLANK([CA N-1])),
+			        [CA N-1]
+			    )
+			)
+		formatString: +#,0 €;-#,0 €;0 €
+		displayFolder: Explication du CA
+		lineageTag: ef40e981-4336-46e9-99df-911c2224ba48
+
+	/// E05 · Écart de CA des clients actifs sur les deux périodes.
+	measure 'Variation CA clients fidèles' =
+			IF(
+			    NOT ISBLANK([CA N-1]),
+			    SUMX(
+			        FILTER(VALUES(Clients[id_client]), NOT ISBLANK([Chiffre d'affaires]) && NOT ISBLANK([CA N-1])),
+			        [Chiffre d'affaires] - [CA N-1]
+			    )
+			)
+		formatString: +#,0 €;-#,0 €;0 €
+		displayFolder: Explication du CA
+		lineageTag: 8bd4d8e8-a265-43ba-9940-46e3dd7567e7
+
+	/// E06 · CA des clients absents en N-1 mais déjà clients auparavant.
+	measure 'CA clients revenus' =
+			VAR Debut = MIN(Calendrier[Date])
+			RETURN
+			    IF(
+			        NOT ISBLANK([CA N-1]),
+			        SUMX(
+			            FILTER(
+			                VALUES(Clients[id_client]),
+			                NOT ISBLANK([Chiffre d'affaires]) && ISBLANK([CA N-1])
+			                    && CALCULATE(MIN(Ventes[date_vente]), REMOVEFILTERS(Calendrier)) < Debut
+			            ),
+			            [Chiffre d'affaires]
+			        )
+			    )
+		formatString: +#,0 €;-#,0 €;0 €
+		displayFolder: Explication du CA
+		lineageTag: bbcd2980-60cd-411a-9632-679897866b6b
+
+	/// E07 · CA des clients dont le premier achat tombe dans la période. CA N-1 + E04 + E05 + E06 + E07 = CA.
+	measure 'CA nouveaux clients' =
+			VAR Debut = MIN(Calendrier[Date])
+			RETURN
+			    IF(
+			        NOT ISBLANK([CA N-1]),
+			        SUMX(
+			            FILTER(
+			                VALUES(Clients[id_client]),
+			                NOT ISBLANK([Chiffre d'affaires]) && ISBLANK([CA N-1])
+			                    && CALCULATE(MIN(Ventes[date_vente]), REMOVEFILTERS(Calendrier)) >= Debut
+			            ),
+			            [Chiffre d'affaires]
+			        )
+			    )
+		formatString: +#,0 €;-#,0 €;0 €
+		displayFolder: Explication du CA
+		lineageTag: 6171e472-10f4-4abe-adf4-4179c1ed6a70
+
+	/// E08 · Part du CA réalisée par ce client et tous ceux qui font plus que lui (courbe de concentration).
+	measure 'Part cumulée du CA' =
+			VAR CAClient = [Chiffre d'affaires]
+			RETURN
+			    IF(
+			        HASONEVALUE(Clients[nom_client]) && NOT ISBLANK(CAClient),
+			        DIVIDE(
+			            SUMX(FILTER(ALLSELECTED(Clients), [Chiffre d'affaires] >= CAClient), [Chiffre d'affaires]),
+			            CALCULATE([Chiffre d'affaires], ALLSELECTED(Clients))
+			        )
+			    )
+		formatString: 0.0 %
+		displayFolder: Explication du CA
+		lineageTag: d66b9dce-e874-4d65-9a96-c076bfe2029a
+
+	/// Valeur de chaque étape de la cascade volume / prix / mix.
+	measure 'Montant pont prix' =
+			SWITCH(
+			    SELECTEDVALUE('Pont prix'[Étape]),
+			    "Effet volume", [Effet volume],
+			    "Effet prix", [Effet prix],
+			    "Effet mix", [Effet mix],
+			    [Effet volume] + [Effet prix] + [Effet mix]
+			)
+		formatString: +#,0 €;-#,0 €;0 €
+		displayFolder: Explication du CA
+		lineageTag: d0b89174-fb34-48f3-9232-7486d40e204b
+
+	/// Valeur de chaque étape de la cascade par type de client.
+	measure 'Montant pont clients' =
+			SWITCH(
+			    SELECTEDVALUE('Pont clients'[Étape]),
+			    "Clients perdus", [CA clients perdus],
+			    "Clients fidèles", [Variation CA clients fidèles],
+			    "Clients revenus", [CA clients revenus],
+			    "Nouveaux clients", [CA nouveaux clients],
+			    [CA clients perdus] + [Variation CA clients fidèles] + [CA clients revenus] + [CA nouveaux clients]
+			)
+		formatString: +#,0 €;-#,0 €;0 €
+		displayFolder: Explication du CA
+		lineageTag: fb7f2bd1-fb43-4067-b7ec-94c81147bf57
+
+	/// Période filtrée, affichée dans le bandeau de titre (v2).
+	measure 'Libellé période' =
+			VAR Annees = CONCATENATEX(VALUES(Calendrier[Année]), Calendrier[Année], ", ", Calendrier[Année], ASC)
+			VAR Mois = SUMMARIZE(Calendrier, Calendrier[Mois n°], Calendrier[Mois])
+			VAR NbMois = COUNTROWS(Mois)
+			VAR TexteMois =
+			    SWITCH(
+			        TRUE(),
+			        NbMois = 12, "tous les mois",
+			        NbMois <= 3, CONCATENATEX(Mois, Calendrier[Mois], ", ", Calendrier[Mois n°], ASC),
+			        NbMois & " mois"
+			    )
+			RETURN Annees & " · " & TexteMois
+		displayFolder: Affichage
+		lineageTag: 6668629f-1e7e-4ae1-8c9e-fb64543be5be
+
+	/// Sous-titre des cascades : du CA N-1 au CA de la période.
+	measure 'Sous-titre pont' =
+			IF(
+			    ISBLANK([CA N-1]),
+			    "Pas de données N-1 pour cette période",
+			    "De " & FORMAT([CA N-1], "#,0 €") & " en N-1 à " & FORMAT([Chiffre d'affaires], "#,0 €") & " sur la période"
+			)
+		displayFolder: Affichage
+		lineageTag: 8c7bec04-ff3f-4a51-b478-2759f9b92311
+
+	/// Sous-titre de la courbe de concentration.
+	measure 'Texte concentration 20 %' =
+			VAR Actifs = FILTER(VALUES(Clients[id_client]), NOT ISBLANK([Chiffre d'affaires]))
+			VAR K = MAX(1, ROUND(COUNTROWS(Actifs) * 0.2, 0))
+			VAR Top = TOPN(K, Actifs, [Chiffre d'affaires])
+			RETURN
+			    "Les 20 % premiers clients réalisent "
+			        & FORMAT(DIVIDE(SUMX(Top, [Chiffre d'affaires]), [Chiffre d'affaires]), "0.0 %") & " du CA"
+		displayFolder: Affichage
+		lineageTag: 6a9727a6-5aaa-46d6-9dae-82d484c4b3a1
+
 	column id_vente
 		dataType: int64
 		formatString: 0

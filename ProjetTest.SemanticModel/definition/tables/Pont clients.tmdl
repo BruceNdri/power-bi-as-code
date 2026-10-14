@@ -1,0 +1,39 @@
+/// Étapes de la cascade par type de client (table déconnectée).
+table 'Pont clients'
+	lineageTag: 7e70d065-0802-4bcd-b62d-25d4f29e8645
+
+	column 'Étape'
+		dataType: string
+		isNameInferred
+		lineageTag: c03eb9ac-1d17-4e93-8274-40a3b57a1c87
+		summarizeBy: none
+		sourceColumn: [Étape]
+		sortByColumn: Ordre
+
+		annotation SummarizationSetBy = Automatic
+
+	column Ordre
+		dataType: int64
+		isHidden
+		isNameInferred
+		formatString: 0
+		lineageTag: dfdce6ee-1a4a-45fc-a7fd-796081aeb8c8
+		summarizeBy: none
+		sourceColumn: [Ordre]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Pont clients' = calculated
+		mode: import
+		source =
+				DATATABLE(
+				    "Étape", STRING,
+				    "Ordre", INTEGER,
+				    {
+				        { "Clients perdus", 1 },
+				        { "Clients fidèles", 2 },
+				        { "Clients revenus", 3 },
+				        { "Nouveaux clients", 4 }
+				    }
+				)
+

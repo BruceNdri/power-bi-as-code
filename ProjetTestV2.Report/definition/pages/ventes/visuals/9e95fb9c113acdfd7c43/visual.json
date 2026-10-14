@@ -1,0 +1,281 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "9e95fb9c113acdfd7c43",
+  "position": {
+    "x": 280.0,
+    "y": 2110,
+    "z": 46000,
+    "height": 440,
+    "width": 1136.0,
+    "tabOrder": 46000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Ventes"
+                    }
+                  },
+                  "Property": "Rang produit"
+                }
+              },
+              "queryRef": "Ventes.Rang produit",
+              "nativeQueryRef": "#",
+              "displayName": "#"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Produits"
+                    }
+                  },
+                  "Property": "nom_produit"
+                }
+              },
+              "queryRef": "Produits.nom_produit",
+              "nativeQueryRef": "Produit",
+              "displayName": "Produit"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Produits"
+                    }
+                  },
+                  "Property": "categorie"
+                }
+              },
+              "queryRef": "Produits.categorie",
+              "nativeQueryRef": "Catégorie",
+              "displayName": "Catégorie"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Ventes"
+                    }
+                  },
+                  "Property": "Quantité vendue"
+                }
+              },
+              "queryRef": "Ventes.Quantité vendue",
+              "nativeQueryRef": "Quantité",
+              "displayName": "Quantité"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Ventes"
+                    }
+                  },
+                  "Property": "Chiffre d'affaires"
+                }
+              },
+              "queryRef": "Ventes.Chiffre d'affaires",
+              "nativeQueryRef": "CA",
+              "displayName": "CA"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Ventes"
+                    }
+                  },
+                  "Property": "CA N-1"
+                }
+              },
+              "queryRef": "Ventes.CA N-1",
+              "nativeQueryRef": "CA N-1",
+              "displayName": "CA N-1"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Ventes"
+                    }
+                  },
+                  "Property": "Évolution CA vs N-1 (€)"
+                }
+              },
+              "queryRef": "Ventes.Évolution CA vs N-1 (€)",
+              "nativeQueryRef": "Écart",
+              "displayName": "Écart"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Ventes"
+                    }
+                  },
+                  "Property": "Évolution CA vs N-1 (%)"
+                }
+              },
+              "queryRef": "Ventes.Évolution CA vs N-1 (%)",
+              "nativeQueryRef": "Évolution",
+              "displayName": "Évolution"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Ventes"
+                    }
+                  },
+                  "Property": "Part du CA"
+                }
+              },
+              "queryRef": "Ventes.Part du CA",
+              "nativeQueryRef": "Part du CA"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Ventes"
+                    }
+                  },
+                  "Property": "Prix moyen de vente"
+                }
+              },
+              "queryRef": "Ventes.Prix moyen de vente",
+              "nativeQueryRef": "Prix moyen",
+              "displayName": "Prix moyen"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Ventes"
+                    }
+                  },
+                  "Property": "Taux de remise"
+                }
+              },
+              "queryRef": "Ventes.Taux de remise",
+              "nativeQueryRef": "Taux de remise"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "Ventes"
+                  }
+                },
+                "Property": "Chiffre d'affaires"
+              }
+            },
+            "direction": "Descending"
+          }
+        ],
+        "isDefaultSort": true
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Détail des produits'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "subTitle": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Cliquer un en-tête pour trier'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "objects": {
+      "values": [
+        {
+          "properties": {
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Ventes"
+                        }
+                      },
+                      "Property": "Couleur évol. CA"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "Ventes.Évolution CA vs N-1 (%)"
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

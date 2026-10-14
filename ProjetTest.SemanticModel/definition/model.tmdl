@@ -16,4 +16,6 @@ ref table Produits
 ref table Clients
 ref table Ventes
 ref table Calendrier
+ref table 'Pont prix'
+ref table 'Pont clients'
 

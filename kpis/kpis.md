@@ -64,14 +64,14 @@ Mesures d'affichage (dossier `Affichage`) : pour les tuiles du rapport, un libel
 | C12 | Récence (jours) | Clients | Clients | implémenté |
 | C13 | Part du CA des 10 premiers clients | Clients | Clients | implémenté |
 | C14 | Rang client | Clients | Clients | implémenté |
-| E01 | Effet volume | Explication du CA | Ventes | maquette |
-| E02 | Effet prix | Explication du CA | Ventes | maquette |
-| E03 | Effet mix produits | Explication du CA | Ventes | maquette |
-| E04 | CA des clients perdus | Explication du CA | Clients | maquette |
-| E05 | Variation du CA des clients fidèles | Explication du CA | Clients | maquette |
-| E06 | CA des clients revenus | Explication du CA | Clients | maquette |
-| E07 | CA des nouveaux clients | Explication du CA | Clients | maquette |
-| E08 | Part cumulée du CA (concentration) | Explication du CA | Clients | maquette |
+| E01 | Effet volume | Explication du CA | Ventes | implémenté |
+| E02 | Effet prix | Explication du CA | Ventes | implémenté |
+| E03 | Effet mix produits | Explication du CA | Ventes | implémenté |
+| E04 | CA des clients perdus | Explication du CA | Clients | implémenté |
+| E05 | Variation du CA des clients fidèles | Explication du CA | Clients | implémenté |
+| E06 | CA des clients revenus | Explication du CA | Clients | implémenté |
+| E07 | CA des nouveaux clients | Explication du CA | Clients | implémenté |
+| E08 | Part cumulée du CA (concentration) | Explication du CA | Clients | implémenté |
 
 ## Fiches — Ventes
 
@@ -338,12 +338,14 @@ Le prix facturé (`Ventes[prix_unitaire]`) peut être inférieur au prix catalog
 
 Ces mesures alimentent les graphiques en cascade de la v2 : elles décomposent l'écart
 `[Chiffre d'affaires] - [CA N-1]` en morceaux qui **s'additionnent exactement** à cet écart.
-Statut « maquette » : calculées dans `ui/assets/pages/*.js`, pas encore écrites en DAX dans le modèle.
+Implémentées dans `Ventes.tmdl` (dossier d'affichage « Explication du CA ») et reproduites dans `ui/assets/pages/*.js`.
 
-Dans Power BI, une cascade a besoin d'une colonne d'étapes : une table déconnectée `Étapes du pont`
-(Étape, Ordre) et une mesure `SWITCH(SELECTEDVALUE('Étapes du pont'[Étape]), …)` qui renvoie
-le CA N-1, chaque effet puis le CA de la période. La cascade par catégorie (Overview) n'en a pas besoin :
-catégorie en axe, `[Évolution CA vs N-1 (€)]` en valeur.
+Dans Power BI, une cascade a besoin d'une colonne d'étapes : deux tables déconnectées, `Pont prix`
+(Effet volume, Effet prix, Effet mix) et `Pont clients` (Clients perdus, Clients fidèles, Clients revenus,
+Nouveaux clients), avec une colonne `Ordre` pour le tri. Les mesures `Montant pont prix` et
+`Montant pont clients` renvoient la valeur de l'étape (`SWITCH(SELECTEDVALUE(…[Étape]), …)`) ; la barre
+« Total » de Power BI vaut l'écart de CA vs N-1, et le sous-titre (`Sous-titre pont`) rappelle les deux CA.
+La cascade par catégorie (Overview) n'a pas besoin de table : catégorie en axe, `[Évolution CA vs N-1 (€)]` en valeur.
 
 ### E01 · Effet volume
 
@@ -354,7 +356,7 @@ catégorie en axe, `[Évolution CA vs N-1 (€)]` en valeur.
   RETURN IF(NOT ISBLANK([CA N-1]), ([Quantité vendue] - [Quantité vendue N-1]) * PrixN1)
   ```
 - **Format :** `+#,0 €;-#,0 €;0 €`
-- **Statut :** maquette
+- **Statut :** implémenté
 
 ### E02 · Effet prix
 
@@ -367,7 +369,7 @@ catégorie en axe, `[Évolution CA vs N-1 (€)]` en valeur.
   ```
   (un produit absent en N-1 est valorisé à son prix de la période : il n'a pas d'effet prix).
 - **Format :** `+#,0 €;-#,0 €;0 €`
-- **Statut :** maquette
+- **Statut :** implémenté
 
 ### E03 · Effet mix produits
 
@@ -375,7 +377,7 @@ catégorie en axe, `[Évolution CA vs N-1 (€)]` en valeur.
 - **Calcul :** `[CA aux prix N-1] - [Quantité vendue] * DIVIDE([CA N-1], [Quantité vendue N-1])`
 - **Contrôle :** E01 + E02 + E03 = `[Chiffre d'affaires] - [CA N-1]`.
 - **Format :** `+#,0 €;-#,0 €;0 €`
-- **Statut :** maquette
+- **Statut :** implémenté
 
 ### E04 · CA des clients perdus
 
@@ -384,19 +386,19 @@ catégorie en axe, `[Évolution CA vs N-1 (€)]` en valeur.
   ```dax
   - SUMX(FILTER(VALUES(Clients[id_client]), ISBLANK([Chiffre d'affaires]) && NOT ISBLANK([CA N-1])), [CA N-1])
   ```
-- **Statut :** maquette
+- **Statut :** implémenté
 
 ### E05 · Variation du CA des clients fidèles
 
 - **Définition :** écart de CA des clients actifs sur les deux périodes.
 - **Calcul :** `SUMX(FILTER(VALUES(Clients[id_client]), NOT ISBLANK([Chiffre d'affaires]) && NOT ISBLANK([CA N-1])), [Chiffre d'affaires] - [CA N-1])`
-- **Statut :** maquette
+- **Statut :** implémenté
 
 ### E06 · CA des clients revenus
 
 - **Définition :** CA des clients actifs sur la période, absents en N-1 mais déjà clients auparavant.
 - **Calcul :** comme E07, avec premier achat **avant** le début de la période.
-- **Statut :** maquette
+- **Statut :** implémenté
 
 ### E07 · CA des nouveaux clients
 
@@ -411,7 +413,7 @@ catégorie en axe, `[Évolution CA vs N-1 (€)]` en valeur.
       [Chiffre d'affaires])
   ```
 - **Contrôle :** CA N-1 + E04 + E05 + E06 + E07 = `[Chiffre d'affaires]`.
-- **Statut :** maquette
+- **Statut :** implémenté
 
 ### E08 · Part cumulée du CA (concentration)
 
@@ -419,13 +421,14 @@ catégorie en axe, `[Évolution CA vs N-1 (€)]` en valeur.
   Repère affiché : part du CA des 20 % premiers clients.
 - **Calcul :**
   ```dax
-  VAR Rang = [Rang client]
-  RETURN DIVIDE(
-      SUMX(FILTER(ALLSELECTED(Clients), RANKX(ALLSELECTED(Clients), [Chiffre d'affaires]) <= Rang), [Chiffre d'affaires]),
-      CALCULATE([Chiffre d'affaires], ALLSELECTED(Clients)))
+  VAR CAClient = [Chiffre d'affaires]
+  RETURN IF(HASONEVALUE(Clients[nom_client]) && NOT ISBLANK(CAClient),
+      DIVIDE(SUMX(FILTER(ALLSELECTED(Clients), [Chiffre d'affaires] >= CAClient), [Chiffre d'affaires]),
+             CALCULATE([Chiffre d'affaires], ALLSELECTED(Clients))))
   ```
+  Le repère des 20 % est donné par la mesure `Texte concentration 20 %` (sous-titre du graphique).
 - **Format :** `0.0 %`
-- **Statut :** maquette
+- **Statut :** implémenté
 
 <!-- Modèle à copier pour un nouveau KPI
 

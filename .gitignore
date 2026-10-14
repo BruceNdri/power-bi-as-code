@@ -4,3 +4,7 @@
 .venv/
 __pycache__/
 dist/
+node_modules/
+.cache-schemas/
+outils/valider-tmdl/bin/
+outils/valider-tmdl/obj/

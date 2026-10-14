@@ -13,7 +13,7 @@ Les ID de KPI (V01, T03, C06…) renvoient à [kpis.md](kpis.md).
 | Version | Maquette | Rapport | Statut |
 |---|---|---|---|
 | v1 | `ui/*.html` — thème clair, filtres en bandeau | `ProjetTest.pbip` | implémenté |
-| v2 | `ui/v2/*.html` — thème bleu marine, filtres dans une barre latérale, pages numérotées « 01 / 03 » | à faire | maquette |
+| v2 | `ui/v2/*.html` — thème bleu marine, filtres dans une barre latérale, pages numérotées « 01 / 03 » | `ProjetTestV2.pbip` | rapport v2 |
 
 Les deux versions ont les mêmes pages, KPI et visuels (décrits ci-dessous) ; seuls l'habillage et la disposition changent.
 Les visuels marqués **(v2)** ont été ajoutés avec la v2 pour expliquer le CA ; ils apparaissent aussi dans la maquette v1.
@@ -61,6 +61,7 @@ fond `#F2F5F9`, cartes blanches arrondies (12 px) à ombre légère, titres de c
   - barres : CA par région (V01)
   - anneau : CA par segment client (V07)
   - **(v2)** cascade « Du CA N-1 au CA de la période » : CA N-1, contribution de chaque catégorie (T02), CA de la période
+    — dans Power BI : « Écart vs N-1 : contribution des catégories », la barre Total valant l'écart
   - **(v2)** treemap « Répartition du CA » : catégorie puis produit, surface = CA (V01, V07)
   - tableau : top 5 produits (nom, CA, évolution T03)
   - tableau : top 5 clients (nom, segment, CA, évolution T03)

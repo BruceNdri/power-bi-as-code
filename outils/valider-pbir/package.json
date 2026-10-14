@@ -1,0 +1,10 @@
+{
+  "name": "valider-pbir",
+  "private": true,
+  "description": "Valide les fichiers PBIR d'un rapport Power BI contre les schémas JSON publiés par Microsoft.",
+  "type": "module",
+  "dependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1"
+  }
+}

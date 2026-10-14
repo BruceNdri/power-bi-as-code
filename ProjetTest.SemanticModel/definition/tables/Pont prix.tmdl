@@ -1,0 +1,38 @@
+/// Étapes de la cascade volume / prix / mix (table déconnectée).
+table 'Pont prix'
+	lineageTag: e373fc26-0300-40be-ac8e-0d48fb0402a9
+
+	column 'Étape'
+		dataType: string
+		isNameInferred
+		lineageTag: 88b38e8e-c6c9-4b9a-b9c5-b40b298885a4
+		summarizeBy: none
+		sourceColumn: [Étape]
+		sortByColumn: Ordre
+
+		annotation SummarizationSetBy = Automatic
+
+	column Ordre
+		dataType: int64
+		isHidden
+		isNameInferred
+		formatString: 0
+		lineageTag: 1cc8b9b0-4364-4848-8303-d94d4da98574
+		summarizeBy: none
+		sourceColumn: [Ordre]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'Pont prix' = calculated
+		mode: import
+		source =
+				DATATABLE(
+				    "Étape", STRING,
+				    "Ordre", INTEGER,
+				    {
+				        { "Effet volume", 1 },
+				        { "Effet prix", 2 },
+				        { "Effet mix", 3 }
+				    }
+				)
+
