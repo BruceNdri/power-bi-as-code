@@ -3,19 +3,189 @@ table Ventes
 
 	measure 'Chiffre d''affaires' = SUM(Ventes[montant])
 		formatString: #,0.00 €
+		displayFolder: Ventes
 		lineageTag: 9f16af63-59fb-4da0-802e-9b85a9d00fb1
 
 	measure 'Quantité vendue' = SUM(Ventes[quantite])
 		formatString: #,0
+		displayFolder: Ventes
 		lineageTag: de27c320-7f96-4677-8f3d-d6ab47834032
 
 	measure 'Nombre de ventes' = COUNTROWS(Ventes)
 		formatString: #,0
+		displayFolder: Ventes
 		lineageTag: f3bf68bb-7b23-45ec-a299-a32e091ef2a7
 
 	measure 'Panier moyen' = DIVIDE([Chiffre d'affaires], [Nombre de ventes])
 		formatString: #,0.00 €
+		displayFolder: Ventes
 		lineageTag: 03625a05-5384-4ae0-b6bc-9c01d866f8b0
+
+	measure 'Prix moyen de vente' = DIVIDE([Chiffre d'affaires], [Quantité vendue])
+		formatString: #,0.00 €
+		displayFolder: Ventes
+		lineageTag: c3555cc9-4bfe-4562-9e63-c23d2b80371a
+
+	measure 'Nombre de produits vendus' = DISTINCTCOUNT(Ventes[id_produit])
+		formatString: #,0
+		displayFolder: Ventes
+		lineageTag: a8161c80-850d-4dff-aebc-3a7e5d3843ea
+
+	measure 'Part du CA' = DIVIDE([Chiffre d'affaires], CALCULATE([Chiffre d'affaires], ALLSELECTED()))
+		formatString: 0.0 %
+		displayFolder: Ventes
+		lineageTag: f78f440e-56e4-4bce-b7cb-7b7012a4ad4d
+
+	measure 'Rang produit' = IF(HASONEVALUE(Produits[nom_produit]), RANKX(ALLSELECTED(Produits[nom_produit]), [Chiffre d'affaires]))
+		formatString: #,0
+		displayFolder: Ventes
+		lineageTag: a946229d-3642-4374-b958-70672a0d678b
+
+	measure 'CA N-1' = CALCULATE([Chiffre d'affaires], SAMEPERIODLASTYEAR(Calendrier[Date]))
+		formatString: #,0.00 €
+		displayFolder: Temps
+		lineageTag: 5f16adcc-d248-4f1f-ad31-5a1c8d78e243
+
+	measure 'Évolution CA vs N-1 (€)' = IF(NOT ISBLANK([CA N-1]), [Chiffre d'affaires] - [CA N-1])
+		formatString: +#,0.00 €;-#,0.00 €;0.00 €
+		displayFolder: Temps
+		lineageTag: b86ff83f-17f6-4986-b36c-76d71acb529a
+
+	measure 'Évolution CA vs N-1 (%)' = DIVIDE([Chiffre d'affaires] - [CA N-1], [CA N-1])
+		formatString: +0.0 %;-0.0 %;0.0 %
+		displayFolder: Temps
+		lineageTag: a60ecf00-4a9d-4bda-ba26-e208558cae11
+
+	measure 'CA cumul annuel' = TOTALYTD([Chiffre d'affaires], Calendrier[Date])
+		formatString: #,0.00 €
+		displayFolder: Temps
+		lineageTag: 985e484e-1011-44b6-84da-261debaba525
+
+	measure 'CA cumul annuel N-1' = CALCULATE([CA cumul annuel], SAMEPERIODLASTYEAR(Calendrier[Date]))
+		formatString: #,0.00 €
+		displayFolder: Temps
+		lineageTag: 943bf35e-896b-469a-b22f-49b609f5d2e0
+
+	measure 'Évolution cumul annuel (%)' = DIVIDE([CA cumul annuel] - [CA cumul annuel N-1], [CA cumul annuel N-1])
+		formatString: +0.0 %;-0.0 %;0.0 %
+		displayFolder: Temps
+		lineageTag: 70db1011-c007-43b4-b346-58b38ea16b52
+
+	measure 'CA mois précédent' = CALCULATE([Chiffre d'affaires], PREVIOUSMONTH(Calendrier[Date]))
+		formatString: #,0.00 €
+		displayFolder: Temps
+		lineageTag: 234a76e1-1fbe-4a96-813d-5f38088a546d
+
+	measure 'Évolution vs mois précédent (%)' = DIVIDE([Chiffre d'affaires] - [CA mois précédent], [CA mois précédent])
+		formatString: +0.0 %;-0.0 %;0.0 %
+		displayFolder: Temps
+		lineageTag: 82653035-904e-4f53-a313-c7d633179f19
+
+	measure 'CA moyenne mobile 3 mois' = DIVIDE(CALCULATE([Chiffre d'affaires], DATESINPERIOD(Calendrier[Date], MAX(Calendrier[Date]), -3, MONTH)), 3)
+		formatString: #,0.00 €
+		displayFolder: Temps
+		lineageTag: 31273296-585b-4877-ba40-182b76517b67
+
+	measure 'CA au prix catalogue' = SUMX(Ventes, Ventes[quantite] * RELATED(Produits[prix_unitaire]))
+		formatString: #,0.00 €
+		displayFolder: Remises
+		lineageTag: fd1d6106-211d-46e6-8ecc-1e011e4c8afb
+
+	measure 'Montant des remises' = [CA au prix catalogue] - [Chiffre d'affaires]
+		formatString: #,0.00 €
+		displayFolder: Remises
+		lineageTag: ac8125a6-ad0a-4671-bd36-feab1be4743c
+
+	measure 'Taux de remise' = DIVIDE([Montant des remises], [CA au prix catalogue])
+		formatString: 0.0 %
+		displayFolder: Remises
+		lineageTag: 074fa7f9-6ed8-42e6-badf-f21a4625167b
+
+	measure 'Clients actifs' = DISTINCTCOUNT(Ventes[id_client])
+		formatString: #,0
+		displayFolder: Clients
+		lineageTag: 6b7f11ad-d474-42dc-ba2a-aaaf216324c4
+
+	measure 'Clients au portefeuille' = COUNTROWS(Clients)
+		formatString: #,0
+		displayFolder: Clients
+		lineageTag: 7f37ad50-3a6f-4bac-9f1b-c4614af6b1cd
+
+	measure 'Taux de clients actifs' = DIVIDE([Clients actifs], [Clients au portefeuille])
+		formatString: 0.0 %
+		displayFolder: Clients
+		lineageTag: 565791d6-24eb-4332-9a71-dda3f2d22806
+
+	measure 'CA moyen par client' = DIVIDE([Chiffre d'affaires], [Clients actifs])
+		formatString: #,0.00 €
+		displayFolder: Clients
+		lineageTag: fe23a3a5-2bfb-4c5e-8ac2-ba3c0272e8f3
+
+	measure 'Fréquence d''achat' = DIVIDE([Nombre de ventes], [Clients actifs])
+		formatString: #,0.0
+		displayFolder: Clients
+		lineageTag: 4b2f9a9f-7d55-4a71-b44a-aabbc25acfba
+
+	measure 'Nouveaux clients' =
+			VAR Debut = MIN(Calendrier[Date])
+			RETURN
+			    COUNTROWS(
+			        FILTER(
+			            VALUES(Ventes[id_client]),
+			            CALCULATE(MIN(Ventes[date_vente]), REMOVEFILTERS(Calendrier)) >= Debut
+			        )
+			    )
+		formatString: #,0
+		displayFolder: Clients
+		lineageTag: c5f19607-be4b-4211-91b8-9f61143b620e
+
+	measure 'Clients actifs N-1' = CALCULATE([Clients actifs], SAMEPERIODLASTYEAR(Calendrier[Date]))
+		formatString: #,0
+		displayFolder: Clients
+		lineageTag: 1dca412c-8844-4679-bde4-a6f07811823e
+
+	measure 'Évolution clients actifs (%)' = DIVIDE([Clients actifs] - [Clients actifs N-1], [Clients actifs N-1])
+		formatString: +0.0 %;-0.0 %;0.0 %
+		displayFolder: Clients
+		lineageTag: 92f2f116-efad-49e7-aca4-fadcf6591059
+
+	measure 'Taux de rétention' =
+			VAR ClientsN1 = CALCULATETABLE(VALUES(Ventes[id_client]), SAMEPERIODLASTYEAR(Calendrier[Date]))
+			VAR ClientsN = VALUES(Ventes[id_client])
+			RETURN DIVIDE(COUNTROWS(INTERSECT(ClientsN1, ClientsN)), COUNTROWS(ClientsN1))
+		formatString: 0.0 %
+		displayFolder: Clients
+		lineageTag: 5eaae495-41b7-471e-ae01-a29fa888a200
+
+	measure 'Clients perdus' =
+			VAR ClientsN1 = CALCULATETABLE(VALUES(Ventes[id_client]), SAMEPERIODLASTYEAR(Calendrier[Date]))
+			VAR ClientsN = VALUES(Ventes[id_client])
+			RETURN COUNTROWS(EXCEPT(ClientsN1, ClientsN))
+		formatString: #,0
+		displayFolder: Clients
+		lineageTag: cb5b8852-2d4b-4c62-8e16-8ca6f208f823
+
+	measure 'Date du dernier achat' = MAX(Ventes[date_vente])
+		formatString: dd/mm/yyyy
+		displayFolder: Clients
+		lineageTag: b1c1f928-e883-4ca4-90f6-821143800436
+
+	measure 'Récence (jours)' = IF(NOT ISBLANK([Date du dernier achat]), DATEDIFF([Date du dernier achat], MAX(Calendrier[Date]), DAY))
+		formatString: #,0
+		displayFolder: Clients
+		lineageTag: 46cdd886-e4ed-4421-9c2a-3c6bbbe06327
+
+	measure 'Part du CA des 10 premiers clients' =
+			VAR Top10 = TOPN(10, VALUES(Clients[id_client]), [Chiffre d'affaires])
+			RETURN DIVIDE(SUMX(Top10, [Chiffre d'affaires]), [Chiffre d'affaires])
+		formatString: 0.0 %
+		displayFolder: Clients
+		lineageTag: beb6c04b-8fa7-4898-8209-73cebe208ade
+
+	measure 'Rang client' = IF(HASONEVALUE(Clients[id_client]), RANKX(ALLSELECTED(Clients[id_client]), [Chiffre d'affaires]))
+		formatString: #,0
+		displayFolder: Clients
+		lineageTag: d0e46910-5d03-49ff-90e1-69fbdb6bb72e
 
 	column id_vente
 		dataType: int64

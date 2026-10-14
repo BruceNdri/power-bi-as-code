@@ -1,0 +1,93 @@
+table Calendrier
+	dataCategory: Time
+	lineageTag: 50e92983-e5e0-43ad-91fb-d76c15d1ff56
+
+	column 'Date'
+		dataType: dateTime
+		isKey
+		isNameInferred
+		formatString: Long Date
+		lineageTag: 87773fc7-4836-456f-a9f5-6399fc76bdf8
+		summarizeBy: none
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column 'Année'
+		dataType: int64
+		isNameInferred
+		formatString: 0
+		lineageTag: f6890111-f1ed-4ac8-b36c-c0218472b5ea
+		summarizeBy: none
+		sourceColumn: [Année]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Trimestre'
+		dataType: string
+		isNameInferred
+		lineageTag: 043ef617-aebc-4398-afb6-51c43af35ff1
+		summarizeBy: none
+		sourceColumn: [Trimestre]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Mois n°'
+		dataType: int64
+		isNameInferred
+		formatString: 0
+		lineageTag: 279fc796-e2bd-4527-9b44-d86be1ea502a
+		summarizeBy: none
+		sourceColumn: [Mois n°]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Mois'
+		dataType: string
+		isNameInferred
+		lineageTag: 3ea0e10c-6f55-4274-a96c-179fee3ed52f
+		summarizeBy: none
+		sourceColumn: [Mois]
+		sortByColumn: 'Mois n°'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Année-Mois'
+		dataType: string
+		isNameInferred
+		lineageTag: 8f7fa3d5-67d3-4f64-849b-e5e70ee929d7
+		summarizeBy: none
+		sourceColumn: [Année-Mois]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Début du mois'
+		dataType: dateTime
+		isNameInferred
+		formatString: Short Date
+		lineageTag: e5b21e96-6d07-4849-abbd-adddf79948e0
+		summarizeBy: none
+		sourceColumn: [Début du mois]
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition Calendrier = calculated
+		mode: import
+		source =
+				VAR Debut = DATE(YEAR(MIN(Ventes[date_vente])), 1, 1)
+				VAR Fin = DATE(YEAR(MAX(Ventes[date_vente])), 12, 31)
+				RETURN
+				    ADDCOLUMNS(
+				        CALENDAR(Debut, Fin),
+				        "Année", YEAR([Date]),
+				        "Trimestre", "T" & QUARTER([Date]),
+				        "Mois n°", MONTH([Date]),
+				        "Mois", FORMAT([Date], "mmm"),
+				        "Année-Mois", FORMAT([Date], "yyyy-mm"),
+				        "Début du mois", DATE(YEAR([Date]), MONTH([Date]), 1)
+				    )
+

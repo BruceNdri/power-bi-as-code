@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clients · ProjetTest</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <script src="assets/donnees.js"></script>
+  <script src="assets/charts.js"></script>
+  <script src="assets/app.js"></script>
+  <script>
+    App.demarrer({
+      cle: 'clients',
+      titre: 'Clients',
+      rendu(ctx, ui) {
+        const { M, sel, prec, n1, evol, grouper, COULEURS } = ctx;
+        const { tuile, carte, fmt, badgeEvol, echap } = ui;
+        const G = window.Graph;
+        const ev = (a, b) => (n1 ? evol(a, b) : null);
+        const evolCellule = v => badgeEvol(v, { suffixe: '' });
+        const pastille = (couleur, txt) => `<i class="pastille" style="background:${couleur}"></i>${echap(txt)}`;
+
+        // ---------- Agrégats par client ----------
+        const gN = grouper(sel, v => v.idc), gN1 = grouper(prec, v => v.idc);
+        const parClient = [...gN].map(([id, l]) => {
+          const c = ctx.clientParId.get(id), ca = M.ca(l), caN1 = gN1.has(id) ? M.ca(gN1.get(id)) : null;
+          const dernier = Math.max(...l.map(v => v.t));
+          return { id, nom: c.nom, segment: c.segment, ville: c.ville, region: c.region, ca, caN1,
+                   e: n1 ? evol(ca, caN1 || 0) : null, nb: l.length, panier: ca / l.length,
+                   dernier, recence: Math.round((ctx.fin - dernier) / 864e5) };
+        }).sort((a, b) => b.ca - a.ca).map((x, i) => ({ ...x, rang: i + 1 }));
+        const caTotal = M.ca(sel);
+
+        // ---------- KPI ----------
+        const actifs = M.clients(sel), actifsN1 = M.clients(prec);
+        tuile({ lib: 'Clients actifs', val: fmt.nb(actifs), delta: badgeEvol(ev(actifs, actifsN1)) });
+        tuile({ lib: 'Taux de clients actifs', val: fmt.pct(actifs / ctx.portefeuille), sous: `sur ${fmt.nb(ctx.portefeuille)} clients au portefeuille` });
+        tuile({ lib: 'Nouveaux clients', val: fmt.nb(ctx.nouveaux(sel)), sous: 'premier achat sur la période' });
+        tuile({ lib: 'Taux de rétention', val: fmt.pct(ctx.retention), sous: n1 ? 'clients N-1 revenus acheter' : 'pas de données N-1' });
+        tuile({ lib: 'Clients perdus', val: fmt.nb(ctx.perdus), sous: n1 ? 'actifs en N-1, sans achat depuis' : 'pas de données N-1' });
+        tuile({ lib: 'CA moyen par client', val: fmt.eur0(M.caParClient(sel)), delta: badgeEvol(ev(M.caParClient(sel), M.caParClient(prec))) });
+        tuile({ lib: "Fréquence d'achat", val: fmt.nb1(M.frequence(sel)), sous: 'achats par client actif' });
+        const top10 = parClient.slice(0, 10).reduce((a, x) => a + x.ca, 0);
+        tuile({ lib: 'Part du CA des 10 premiers', val: fmt.pct(top10 / caTotal), sous: 'concentration du chiffre d’affaires' });
+
+        // ---------- Clients actifs et nouveaux par mois ----------
+        const premierMois = new Map([...ctx.premierAchat].map(([id, t]) => {
+          const d = new Date(t); return [id, d.getUTCFullYear() * 12 + d.getUTCMonth()];
+        }));
+        const gMois = grouper(sel, v => v.k);
+        const labels = ctx.cles.map(ctx.libMois);
+        const actifsMois = ctx.cles.map(k => (gMois.has(k) ? M.clients(gMois.get(k)) : 0));
+        const nouveauxMois = ctx.cles.map(k => (gMois.has(k) ? [...new Set(gMois.get(k).map(v => v.idc))].filter(id => premierMois.get(id) === k).length : 0));
+        G.temporel(carte({ titre: 'Clients actifs et nouveaux clients par mois', sous: 'Nombre de clients distincts',
+          tableau: () => ({ colonnes: [{ titre: 'Mois', cle: 'm' }, { titre: 'Clients actifs', cle: 'a', f: fmt.nb, d: true },
+                                       { titre: 'Nouveaux clients', cle: 'n', f: fmt.nb, d: true }],
+                            lignes: labels.map((m, i) => ({ m, a: actifsMois[i], n: nouveauxMois[i] })) }) }),
+          { labels, format: fmt.nb, formatAxe: fmt.nb,
+            lignes: [{ nom: 'Clients actifs', couleur: 'var(--s1)', valeurs: actifsMois },
+                     { nom: 'Nouveaux clients', couleur: 'var(--s2)', valeurs: nouveauxMois }] });
+
+        // ---------- CA par segment, N vs N-1 ----------
+        const sN = grouper(sel, v => v.c.segment), sN1 = grouper(prec, v => v.c.segment);
+        const segs = Object.keys(COULEURS.segment).filter(s => sN.has(s));
+        const itemsSeg = segs.map(s => {
+          const v = M.ca(sN.get(s)), v1 = n1 ? (sN1.has(s) ? M.ca(sN1.get(s)) : 0) : null;
+          return { label: s, valeurs: n1 ? [v, v1] : [v], e: ev(v, v1),
+                   details: [{ nom: 'Évolution', valeur: fmt.evol(ev(v, v1)) }] };
+        });
+        G.barresH(carte({ titre: 'CA par segment client', sous: n1 ? 'Période comparée à N-1' : 'Pas de données N-1 pour cette période',
+          tableau: () => ({ colonnes: [{ titre: 'Segment', cle: 'label' }, { titre: 'CA', cle: 'v', f: fmt.eur, d: true },
+                                       { titre: 'CA N-1', cle: 'v1', f: fmt.eur, d: true }, { titre: 'Évolution', cle: 'e', d: true, html: l => evolCellule(l.e) }],
+                            lignes: itemsSeg.map(it => ({ label: it.label, v: it.valeurs[0], v1: it.valeurs[1], e: it.e })) }) }),
+          { items: itemsSeg, format: fmt.eur, etiquette: fmt.eurC,
+            series: n1 ? [{ nom: 'Période', couleur: 'var(--s1)' }, { nom: 'Même période N-1', couleur: 'var(--n1)' }]
+                       : [{ nom: 'Période', couleur: 'var(--s1)' }] });
+
+        // ---------- Par région : deux mesures, deux graphiques (jamais deux axes) ----------
+        const gReg = grouper(sel, v => v.c.region);
+        const regions = [...gReg].map(([r, l]) => ({ r, actifs: M.clients(l), moyen: M.caParClient(l), ca: M.ca(l) }));
+        const tableRegions = () => ({ colonnes: [{ titre: 'Région', cle: 'r' }, { titre: 'Clients actifs', cle: 'actifs', f: fmt.nb, d: true },
+                                                 { titre: 'CA moyen par client', cle: 'moyen', f: fmt.eur, d: true }, { titre: 'CA', cle: 'ca', f: fmt.eur, d: true }],
+                                      lignes: regions, tri: { cle: 'actifs', desc: true } });
+        G.barresH(carte({ titre: 'Clients actifs par région', tableau: tableRegions }),
+          { items: [...regions].sort((a, b) => b.actifs - a.actifs).map(x => ({ label: x.r, valeurs: [x.actifs] })),
+            series: [{ nom: 'Clients actifs', couleur: 'var(--s1)' }], format: fmt.nb });
+        G.barresH(carte({ titre: 'CA moyen par client et par région', tableau: tableRegions }),
+          { items: [...regions].sort((a, b) => b.moyen - a.moyen).map(x => ({ label: x.r, valeurs: [x.moyen] })),
+            series: [{ nom: 'CA moyen par client', couleur: 'var(--s1)' }], format: fmt.eur, etiquette: fmt.eurC });
+
+        // ---------- Nuage : fréquence × panier moyen ----------
+        G.nuage(carte({ titre: 'Profil des clients', sous: "Panier moyen (axe vertical) selon le nombre d'achats · taille = CA",
+          tableau: () => ({ colonnes: [{ titre: 'Client', cle: 'nom' }, { titre: 'Segment', cle: 'segment' },
+                                       { titre: 'Achats', cle: 'nb', f: fmt.nb, d: true }, { titre: 'Panier moyen', cle: 'panier', f: fmt.eur, d: true },
+                                       { titre: 'CA', cle: 'ca', f: fmt.eur, d: true }],
+                            lignes: parClient, tri: { cle: 'ca', desc: true } }) }),
+          { legende: segs.map(s => ({ nom: s, couleur: COULEURS.segment[s] })),
+            titreX: "Nombre d'achats sur la période", fx: fmt.nb, fy: fmt.eurAxe,
+            points: parClient.map(c => ({ x: c.nb, y: c.panier, t: c.ca, couleur: COULEURS.segment[c.segment], label: c.nom,
+              lignes: [{ nom: 'Segment', valeur: c.segment }, { nom: 'Achats', valeur: fmt.nb(c.nb) },
+                       { nom: 'Panier moyen', valeur: fmt.eur0(c.panier) }, { nom: 'CA', valeur: fmt.eur0(c.ca) }] })) });
+
+        // ---------- Top 10 clients ----------
+        G.barresH(carte({ titre: 'Top 10 clients', sous: "Classés par chiffre d'affaires",
+          tableau: () => ({ colonnes: [{ titre: '#', cle: 'rang' }, { titre: 'Client', cle: 'nom' }, { titre: 'CA', cle: 'ca', f: fmt.eur, d: true },
+                                       { titre: 'Part', cle: 'part', f: fmt.pct, d: true }],
+                            lignes: parClient.slice(0, 10).map(c => ({ ...c, part: c.ca / caTotal })) }) }),
+          { items: parClient.slice(0, 10).map(c => ({ label: c.nom, valeurs: [c.ca],
+              details: [{ nom: 'Segment', valeur: c.segment }, { nom: 'Ville', valeur: c.ville }, { nom: 'Part du CA', valeur: fmt.pct(c.ca / caTotal) }] })),
+            series: [{ nom: "Chiffre d'affaires", couleur: 'var(--s1)' }], format: fmt.eur, etiquette: fmt.eurC });
+
+        // ---------- Détail des clients ----------
+        G.tableau(carte({ titre: 'Détail des clients', sous: 'Clients actifs sur la période · cliquer un en-tête pour trier · récence > 90 jours en rouge', span: 12 }), {
+          tri: { cle: 'ca', desc: true }, hauteurMax: 460,
+          colonnes: [
+            { titre: '#', cle: 'rang', d: true }, { titre: 'Client', cle: 'nom' },
+            { titre: 'Segment', cle: 'segment', html: l => pastille(COULEURS.segment[l.segment], l.segment) },
+            { titre: 'Ville', cle: 'ville' }, { titre: 'Région', cle: 'region' },
+            { titre: 'CA', cle: 'ca', f: fmt.eur, d: true }, { titre: 'CA N-1', cle: 'caN1', f: fmt.eur, d: true },
+            { titre: 'Évolution', cle: 'e', d: true, html: l => evolCellule(l.e) },
+            { titre: 'Ventes', cle: 'nb', f: fmt.nb, d: true }, { titre: 'Panier moyen', cle: 'panier', f: fmt.eur, d: true },
+            { titre: 'Dernier achat', cle: 'dernier', f: fmt.date, d: true },
+            { titre: 'Récence (j)', cle: 'recence', d: true, cls: v => (v > 90 ? 'attention' : ''),
+              html: l => (l.recence > 90 ? '⚠ ' : '') + fmt.nb(l.recence) }],
+          lignes: parClient });
+      },
+    });
+  </script>
+</body>
+</html>

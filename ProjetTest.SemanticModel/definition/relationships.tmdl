@@ -6,3 +6,7 @@ relationship 3035df7c-8062-4a92-a4e8-54bac0f73e94
 	fromColumn: Ventes.id_produit
 	toColumn: Produits.id_produit
 
+relationship 9c6f7505-83ed-4e25-9608-e9796db7c47f
+	fromColumn: Ventes.date_vente
+	toColumn: Calendrier.Date
+

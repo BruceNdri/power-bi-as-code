@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overview · ProjetTest</title>
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <script src="assets/donnees.js"></script>
+  <script src="assets/charts.js"></script>
+  <script src="assets/app.js"></script>
+  <script>
+    App.demarrer({
+      cle: 'overview',
+      titre: 'Overview',
+      rendu(ctx, ui) {
+        const { M, sel, prec, n1, evol, grouper, COULEURS } = ctx;
+        const { tuile, carte, fmt, badgeEvol } = ui;
+        const G = window.Graph;
+        const ev = (a, b) => (n1 ? evol(a, b) : null);
+        const evolCellule = v => badgeEvol(v, { suffixe: '' });
+
+        // ---------- KPI ----------
+        const ca = M.ca(sel), caN1 = M.ca(prec);
+        tuile({ lib: "Chiffre d'affaires", val: fmt.eurC(ca), delta: badgeEvol(ev(ca, caN1)) });
+        tuile({ lib: 'CA cumul annuel', val: fmt.eurC(M.ca(ctx.ytd)), delta: badgeEvol(ev(M.ca(ctx.ytd), M.ca(ctx.ytdN1))) });
+        tuile({ lib: 'Nombre de ventes', val: fmt.nb(M.nb(sel)), delta: badgeEvol(ev(M.nb(sel), M.nb(prec))) });
+        tuile({ lib: 'Panier moyen', val: fmt.eur0(M.panier(sel)), delta: badgeEvol(ev(M.panier(sel), M.panier(prec))) });
+        tuile({ lib: 'Clients actifs', val: fmt.nb(M.clients(sel)), delta: badgeEvol(ev(M.clients(sel), M.clients(prec))) });
+        const nouveaux = ctx.nouveaux(sel);
+        tuile({ lib: 'Nouveaux clients', val: fmt.nb(nouveaux), sous: `${fmt.pct(nouveaux / M.clients(sel))} des clients actifs` });
+        tuile({ lib: 'Taux de remise', val: fmt.pct(M.tauxRemise(sel)), sous: `${fmt.eurC(M.remises(sel))} de remises accordées` });
+
+        // ---------- CA par mois, N vs N-1 ----------
+        const caMois = ctx.parMois(sel), caMoisN1 = ctx.parMois(prec);
+        const labels = ctx.cles.map(ctx.libMois);
+        const valN = ctx.cles.map(caMois);
+        const valN1 = ctx.cles.map(k => (k - 12 >= ctx.kMin ? caMoisN1(k - 12) : null));
+        G.temporel(carte({
+          titre: "Chiffre d'affaires par mois", sous: 'Période sélectionnée comparée à la même période un an plus tôt', span: 8,
+          tableau: () => ({ colonnes: [
+              { titre: 'Mois', cle: 'mois' }, { titre: 'CA', cle: 'n', f: fmt.eur, d: true },
+              { titre: 'CA N-1', cle: 'n1', f: fmt.eur, d: true },
+              { titre: 'Évolution', cle: 'e', d: true, html: l => evolCellule(l.e) }],
+            lignes: labels.map((m, i) => ({ mois: m, n: valN[i], n1: valN1[i], e: valN1[i] ? evol(valN[i], valN1[i]) : null })) }),
+        }), { labels, format: fmt.eur0, formatAxe: fmt.eurAxe,
+              lignes: [{ nom: 'Période', couleur: 'var(--s1)', valeurs: valN },
+                       { nom: 'Même période N-1', couleur: 'var(--n1)', valeurs: valN1 }] });
+
+        // ---------- CA par segment ----------
+        const parSegment = grouper(sel, v => v.c.segment);
+        const segments = Object.keys(COULEURS.segment).filter(x => parSegment.has(x))
+          .map(x => ({ label: x, valeur: M.ca(parSegment.get(x)), couleur: COULEURS.segment[x] }));
+        G.anneau(carte({ titre: 'CA par segment client', span: 4,
+          tableau: () => ({ colonnes: [{ titre: 'Segment', cle: 'label' }, { titre: 'CA', cle: 'valeur', f: fmt.eur, d: true },
+                                       { titre: 'Part', cle: 'part', f: fmt.pct, d: true }],
+                            lignes: segments.map(x => ({ ...x, part: x.valeur / ca })) }) }),
+          { items: segments, format: fmt.eur, formatTotal: fmt.eurC, pct: fmt.pct, libTotal: 'CA total' });
+
+        // ---------- CA par catégorie et par région ----------
+        const barresParDim = (cle, titre, sous) => {
+          const gN = grouper(sel, cle), gN1 = grouper(prec, cle);
+          const items = [...gN].map(([k, l]) => {
+            const v = M.ca(l), v1 = gN1.has(k) ? M.ca(gN1.get(k)) : 0;
+            return { label: k, valeurs: [v], etiquette: `${fmt.eurC(v)} · ${fmt.pct(v / ca)}`, n1: v1, e: ev(v, v1),
+                     details: [{ nom: 'Part du CA', valeur: fmt.pct(v / ca) }, { nom: 'Évolution vs N-1', valeur: fmt.evol(ev(v, v1)) }] };
+          }).sort((a, b) => b.valeurs[0] - a.valeurs[0]);
+          G.barresH(carte({ titre, sous, span: 6,
+            tableau: () => ({ colonnes: [{ titre: titre.replace('CA par ', '').replace(/^./, c => c.toUpperCase()), cle: 'label' },
+                                         { titre: 'CA', cle: 'ca', f: fmt.eur, d: true }, { titre: 'Part', cle: 'part', f: fmt.pct, d: true },
+                                         { titre: 'Évolution', cle: 'e', d: true, html: l => evolCellule(l.e) }],
+                              lignes: items.map(it => ({ label: it.label, ca: it.valeurs[0], part: it.valeurs[0] / ca, e: it.e })) }) }),
+            { items, series: [{ nom: "Chiffre d'affaires", couleur: 'var(--s1)' }], format: fmt.eur });
+        };
+        barresParDim(v => v.p.categorie, 'CA par catégorie', 'Montant et part du chiffre d’affaires');
+        barresParDim(v => v.c.region, 'CA par région', 'Montant et part du chiffre d’affaires');
+
+        // ---------- Tops ----------
+        const top = (cle, decrire) => {
+          const gN = grouper(sel, cle), gN1 = grouper(prec, cle);
+          return [...gN].map(([k, l]) => {
+            const v = M.ca(l);
+            return { ...decrire(l[0]), ca: v, e: ev(v, gN1.has(k) ? M.ca(gN1.get(k)) : 0) };
+          }).sort((a, b) => b.ca - a.ca).slice(0, 5).map((x, i) => ({ ...x, rang: i + 1 }));
+        };
+        const pastille = (couleur, txt) => `<i class="pastille" style="background:${couleur}"></i>${ui.echap(txt)}`;
+        G.tableau(carte({ titre: 'Top 5 produits', sous: "Classés par chiffre d'affaires" }), {
+          triable: false,
+          colonnes: [{ titre: '#', cle: 'rang' }, { titre: 'Produit', cle: 'nom' },
+                     { titre: 'Catégorie', cle: 'cat', html: l => pastille(COULEURS.categorie[l.cat], l.cat) },
+                     { titre: 'CA', cle: 'ca', f: fmt.eur0, d: true }, { titre: 'vs N-1', cle: 'e', d: true, html: l => evolCellule(l.e) }],
+          lignes: top(v => v.idp, v => ({ nom: v.p.nom, cat: v.p.categorie })) });
+        G.tableau(carte({ titre: 'Top 5 clients', sous: "Classés par chiffre d'affaires" }), {
+          triable: false,
+          colonnes: [{ titre: '#', cle: 'rang' }, { titre: 'Client', cle: 'nom' },
+                     { titre: 'Segment', cle: 'seg', html: l => pastille(COULEURS.segment[l.seg], l.seg) },
+                     { titre: 'CA', cle: 'ca', f: fmt.eur0, d: true }, { titre: 'vs N-1', cle: 'e', d: true, html: l => evolCellule(l.e) }],
+          lignes: top(v => v.idc, v => ({ nom: v.c.nom, seg: v.c.segment })) });
+      },
+    });
+  </script>
+</body>
+</html>

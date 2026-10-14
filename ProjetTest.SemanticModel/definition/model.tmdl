@@ -15,4 +15,5 @@ annotation PBI_ProTooling = ["DevMode"]
 ref table Produits
 ref table Clients
 ref table Ventes
+ref table Calendrier
 
