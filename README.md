@@ -41,11 +41,23 @@ Le modèle lit PostgreSQL via deux paramètres : `ServeurPostgres` (`localhost:5
    ```bash
    ssh -N -L 5433:localhost:5433 <utilisateur>@<serveur>
    ```
-2. Ouvrir `ProjetTest.pbip`, puis **Actualiser**.
+2. Récupérer le projet sur le poste en **un seul bloc** : `git clone`, ou l'archive `dist/ProjetTest.zip`
+   (créée par `python3 scripts/empaqueter.py`) copiée avec
+   `scp <utilisateur>@<serveur>:<chemin>/projet-test/dist/ProjetTest.zip .`. Une copie fichier par fichier
+   peut produire des fichiers vides (erreur Desktop « Required artifact is missing … definition.pbir »).
+   Ouvrir `ProjetTest.pbip` depuis le dossier extrait (à côté de `ProjetTest.Report` et
+   `ProjetTest.SemanticModel`), puis **Actualiser**.
 3. À la demande d'identifiants : onglet **Base de données**, utilisateur `powerbi`,
    mot de passe dans `sources/.env`.
 4. Le serveur n'a pas de SSL (le tunnel chiffre déjà le trafic) : accepter la connexion non chiffrée
    quand Power BI la propose.
+
+Prérequis : une version récente de Power BI Desktop. Le rapport est au format PBIR : sur une version
+antérieure à 2026, activer **Fichier > Options > Fonctionnalités en préversion > « Stocker les rapports
+au format de métadonnées amélioré (PBIR) »** et **« Format TMDL du modèle sémantique »**, puis redémarrer Desktop.
+
+Si l'ouverture échoue, Desktop affiche un message (souvent avec un bouton « Détails ») : il indique
+le fichier et la propriété en cause.
 
 Les pages du rapport sont générées : pour les modifier durablement, changer
 `scripts/generer_rapport.py` puis relancer `python3 scripts/generer_rapport.py`
