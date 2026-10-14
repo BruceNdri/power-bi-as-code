@@ -38,6 +38,18 @@ découpe le rapport en fichiers texte lisibles :
 - **vérification automatique** : les fichiers sont validés contre les schémas JSON de Microsoft et le modèle
   est ouvert par la bibliothèque officielle, avant même de lancer Desktop.
 
+### Et la sécurité ? Des données synthétiques jusqu'à la production
+
+Tout le développement se fait sur des données synthétiques, générées par un script : par exemple des clients,
+des produits et des ventes qui n'existent pas. Maquettes, mesures, visuels, tests : personne ne voit jamais une
+vraie donnée. Pour passer en production, on garde le même rapport, on pointe la connexion vers la vraie base
+(paramètres `ServeurPostgres` et `BasePostgres`) et on clique sur « Actualiser ». Les données de l'entreprise,
+sensibles ou non, ne sortent jamais de leur environnement. Zéro fuite.
+
+C'est encore plus pratique quand on développe avec une IA : l'assistant écrit le modèle, les mesures et les
+visuels, les teste sur les fausses données… sans jamais avoir accès à la vraie base. On profite de l'IA sans
+lui confier une seule donnée sensible.
+
 ---
 
 ## La démarche, étape par étape
